@@ -52,6 +52,21 @@ class User {
 		return $this->email;
 	}
 	
+	function logLogin() {
+		$sql = "INSERT INTO `activity_log` (`userFK`, `timestamp`) VALUES ($this->id, CURRENT_TIMESTAMP)";
+		$this->mysqli->query($sql);
+	}
+	
+	function countLogins() {
+		$sql = "SELECT COUNT(`uid`) as `logs` FROM `activity_log` WHERE `userFK`=$this->id";
+		$res = $this->mysqli->query($sql);
+		if ($res) {
+			$arr = $res->fetch_assoc();
+			return $arr['logs'];
+		}
+		return -1;
+	}
+	
 	public function getCharacters() {
 		//to do: separate living and dead
 		$sql = "SELECT `uid`, `name` FROM `characters` WHERE `owner`=$this->id ORDER BY `uid`";

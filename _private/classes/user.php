@@ -1,4 +1,5 @@
 <?php
+require_once('character.php');
 
 class User {
 	private $mysqli;
@@ -8,33 +9,34 @@ class User {
 	private $email;
 	private $joined;
 	
-	public function __construct($mysqli, $id=0) {
+	public function __construct($mysqli, $id=0, $username='', $passhash='', $email='') {
 		$this->mysqli = $mysqli;
 		$this->id = $id;
 		
 		if ($id>0) $this->fetchFromDB();
+		else if ($id == 0 && $username && $passhash && $email) $this->addNew($username, $passhash, $email);
 	}
 	
 	private function fetchFromDB() {
-		$sql = "SELECT `username`, `passhash`, `email`, `joined` FROM `users` WHERE `uid`=$this->id LIMIT 1";
+		$sql = "SELECT `username`, `passhash2`, `email`, `joined` FROM `users` WHERE `uid`=$this->id LIMIT 1";
 		$res = $this->mysqli->query($sql);
 		if ($res->num_rows>0) {
 			$arr = $res->fetch_assoc();
 			$this->username = $arr["username"];
-			$this->passhash = $arr["passhash"];
+			$this->passhash = $arr["passhash2"];
 			$this->email = $arr["email"];
 			$this->joined = $arr["joined"];
 		}
 	}
 	
 	public function addNew($username, $passhash, $email) {
-		$sql = "INSERT INTO `users` (`uid`, `username`, `passhash`, `email`, `joined`)"
+		$sql = "INSERT INTO `users` (`uid`, `username`, `passhash2`, `email`, `joined`)"
 		. "VALUES (NULL, '$username', '$passhash', '$email', CURRENT_TIMESTAMP() )";
 		$this->mysqli->query($sql);
 		if ($this->mysqli->affected_rows==1) {
 			$this->id = $this->mysqli->insert_id;
-			$this->name = $name;
-			$this->owner = $owner;
+			$this->username = $username;
+			$this->passhash = $passhash;
 			return $this->id;
 		}
 		return false;
@@ -67,6 +69,12 @@ class User {
 		return -1;
 	}
 	
+	public function addCharacter($name='', $sex=3, $location=0) {
+		//to do: Check that player isn't prevented from creating characters
+		$newChar = new Character($this->mysqli, 0, $sex, $name, $this->id, $location);
+		return $newChar;
+	}
+	
 	public function getCharacters() {
 		//to do: separate living and dead
 		$sql = "SELECT `uid`, `name` FROM `characters` WHERE `owner`=$this->id ORDER BY `uid`";
@@ -84,7 +92,7 @@ class User {
 	}
 	
 	public function changePasshash($new) {
-		$sql = "UPDATE `users` SET `passhash`='$new' WHERE `uid`=$this->id LIMIT 1";
+		$sql = "UPDATE `users` SET `passhash2`='$new' WHERE `uid`=$this->id LIMIT 1";
 		$this->mysqli->query($sql);
 		if ($this->mysqli->affected_rows==1) {
 			$this->passhash = $new;

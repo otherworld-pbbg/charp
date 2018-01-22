@@ -3,27 +3,33 @@
 class Character {
 	private $mysqli;
 	private $id;
+	private $sex;
 	private $name;
 	private $owner;
 	private $location;
 	
-	public function __construct($mysqli, $id=0, $name='', $owner=0, $location=0) {
+	public function __construct($mysqli, $id=0, $sex=3, $name='', $owner=0, $location=0) {
 		$this->mysqli = $mysqli;
 		$this->id = $id;
+		$this->sex = $sex;
 		$this->name = $name;
 		$this->owner = $owner;
 		$this->location = $location;
 		
 		if ($id>0 && $owner == 0) $this->fetchFromDB();//It's possible to initialize this object with all the necessary information, but if only id is given, it will get the rest from the db
+		else if ($id == 0 && $owner>0) {
+			$this->addNew($name, $owner, $sex, $location);//Now it's possible to add this to the database with the constructor
+		}
 	}
 	
 	private function fetchFromDB() {
-		$sql = "SELECT `name`, `owner`, `location` FROM `characters` WHERE `uid`=$this->id LIMIT 1";
+		$sql = "SELECT `name`, `owner`, `sex`, `location` FROM `characters` WHERE `uid`=$this->id LIMIT 1";
 		$res = $this->mysqli->query($sql);
 		if ($res->num_rows>0) {
 			$arr = $res->fetch_assoc();
 			$this->name = $arr["name"];
 			$this->owner = $arr["owner"];
+			$this->sex = $arr['sex'];
 			$this->location = $arr['location'];
 			return true;
 		}
@@ -34,14 +40,15 @@ class Character {
 		return $this->fetchFromDB();
 	}
 	
-	public function addNew($name, $owner, $location=0) {
-		$sql = "INSERT INTO `characters` (`uid`, `name`, `owner`, `location`)"
-		. "VALUES (NULL, '$name', $owner, $location)";
+	public function addNew($name, $owner, $sex=3, $location=0) {
+		$sql = "INSERT INTO `characters` (`uid`, `name`, `owner`, `sex`, `location`)"
+		. "VALUES (NULL, '$name', $owner, $sex, $location)";
 		$this->mysqli->query($sql);
 		if ($this->mysqli->affected_rows==1) {
 			$this->id = $this->mysqli->insert_id;
 			$this->name = $name;
 			$this->owner = $owner;
+			$this->sex = $sex;
 			$this->location = $location;
 			return $this->id;
 		}
@@ -61,8 +68,18 @@ class Character {
 		return $this->owner;
 	}
 	
+	public function getSex() {
+		return $this->sex;
+	}
+	
 	public function getLocation() {
 		return $this->location;
+	}
+	
+	public function verbalizeSex() {
+		if ($this->sex == 1) return "male";
+		if ($this->sex == 2) return "female";
+		return "ambiguous";
 	}
 	
 	public function changeName($newName) {

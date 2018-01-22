@@ -21,7 +21,7 @@ if (isset($_POST["username"])&&isset($_POST["password"])&&isset($_POST["submit_b
 				$player = new User($mysqli, $info->uid);
 				$player->logLogin();
 				
-				header('Location: index.php?page=playerMain');
+				header('Location: index.php?page=pIndex');
 				$displayForm = false;
 			}
 			else {
@@ -39,25 +39,45 @@ if (isset($_POST["username"])&&isset($_POST["password"])&&isset($_POST["submit_b
 		para("The username was invalid! Only alphanumeric characters and the underscore are allowed.");
 	}
 }
+if (isset($_GET['msg'])) interpretMsg($_GET['msg']);
 if ($displayForm)
 {
 	include_once "header.php";
-	starttag("form", "", array('action'=>'index.php?page=login', 'method'=>'post', 'class'=>'narrow'));
+	starttag("form", "", array(
+		'action'=>'index.php?page=login',
+		'method'=>'post',
+		'class'=>'narrow'));
 	starttag("p");
 	ptag("label", "Username: ", array('for' => 'username'));
-	ptag("input", "", array('type' => 'text', 'id' => 'username', 'name' => 'username', 'size'=>20, 'maxlength'=>20));
+	ptag("input", "", array(
+		'type' => 'text',
+		'id' => 'username',
+		'name' => 'username',
+		'size'=>20,
+		'maxlength'=>20));
 	closetag("p");
 	
 	starttag("p");
 	ptag("label", "Password: ", array('for' => 'password'));
-	ptag("input", "", array('type' => 'password', 'id' => 'password', 'name' => 'password', 'size'=>20, 'maxlength'=>32));
+	ptag("input", "", array(
+		'type' => 'password',
+		'id' => 'password',
+		'name' => 'password',
+		'size'=>20,
+		'maxlength'=>32));
 	closetag("p");
 	
 	starttag("p");
-	ptag("input", "", array('type' => 'submit', 'id' => 'submit_btn', 'name' => 'submit_btn', 'value' => 'Log in'));
+	ptag("input", "", array(
+		'type' => 'submit',
+		'id' => 'submit_btn',
+		'name' => 'submit_btn',
+		'value' => 'Log in'));
 	closetag("p");
 	
-	ptag("a", "[Forgot password?]", array('href' => 'index.php?page=reset', 'class' => 'smaller'));
+	ptag("a", "[Forgot password?]", array(
+		'href' => 'index.php?page=reset',
+		'class' => 'smaller'));
 	closetag("form");
 }
 

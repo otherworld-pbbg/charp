@@ -250,4 +250,10 @@ function resetPassword($mysqli, $username, $activation, $passhash) {
 	$e = new CustomError("wrong_activation");
 	return $e;//activation code is wrong or username doesn't exist
 }
+
+function backlink($pname, $url) {
+	starttag('p', '', array('class' => 'right'));
+	ptag('a', "[Return to $pname]", array('href' => "$url"));
+	closetag('p');
+}
 ?>

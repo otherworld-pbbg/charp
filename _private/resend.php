@@ -6,7 +6,7 @@ starttag("form", "", array(
 	'action'=>'index.php?page=resend',
 	'method'=>'post',
 	'class'=>'narrow'));
-ptag("h1", "Type of activation");
+ptag("h3", "Type of activation");
 starttag("p");
 ptag("input", "", array(
 	'type'=>'radio',
@@ -36,7 +36,7 @@ ptag("label", "New password",  array('for'=>'type3'));
 closetag("p");
 
 starttag("p");
-ptag("label", "Email: ", array('for'=>'email'));
+ptag("label", "Email: ", array('for'=>'email', 'class' => 'minwide'));
 ptag("input", "", array(
 	'type' => 'text',
 	'id' => 'email',

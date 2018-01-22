@@ -1,6 +1,7 @@
 <?php
 include_once("generic.php");
 include_once("dictionary.php");
+require_once("tags_printer.php");//errormsg, infomsg function
 $displayForm = true;
 
 if (isset($_POST["username"])&&isset($_POST["password"])&&isset($_POST["email"])&&isset($_POST["submit_btn"]))
@@ -19,18 +20,18 @@ if (isset($_POST["username"])&&isset($_POST["password"])&&isset($_POST["email"])
 			$check2 = generateActivationCode($mysqli, $uname, $email, $passhash);
 			if (is_a($check, 'CustomError')) {
 				include_once "header.php";
-				infomsg($check->getMsg());
+				errormsg($check->getMsg());
 			}
 			else {
 				include_once "header.php";
-				para("Activation code was sent to the email you provided. Follow the instructions in the email. If the email doesn't come through, you can have it resent. It might go in the spam folder, so check there first.");
+				infomsg("Activation code was sent to the email you provided. Follow the instructions in the email. If the email doesn't come through, you can have it resent. It might go in the spam folder, so check there first.");
 				$displayForm = false;
 			}
 		}
 	}
 	else {
 		include_once('header.php');
-		para("The username was invalid! Only alphanumeric characters and the underscore are allowed. Try again.");
+		errormsg("The username was invalid! Only alphanumeric characters and the underscore are allowed. Try again.");
 	}
 }
 if ($displayForm)
@@ -44,7 +45,7 @@ if ($displayForm)
 		'class'=>'narrow'));
 	
 	starttag("p");
-	ptag("label", "Username: ", array('for' => 'username'));
+	ptag("label", "Username: ", array('for' => 'username', 'class' => 'minwide'));
 	ptag("input", "", array(
 		'type' => 'text',
 		'id' => 'username',
@@ -54,7 +55,7 @@ if ($displayForm)
 	closetag("p");
 	
 	starttag("p");
-	ptag("label", "Password: ", array('for' => 'password'));
+	ptag("label", "Password: ", array('for' => 'password', 'class' => 'minwide'));
 	ptag("input", "", array(
 		'type' => 'password',
 		'id' => 'password',
@@ -64,7 +65,7 @@ if ($displayForm)
 	closetag("p");
 	
 	starttag("p");
-	ptag("label", "Email: ", array('for' => 'email'));
+	ptag("label", "Email: ", array('for' => 'email', 'class' => 'minwide'));
 	ptag("input", "", array(
 		'type' => 'text',
 		'id' => 'email',

@@ -19,9 +19,9 @@ $pages_loggedin = array(
 	//logged in
 	'pIndex' => 'player_index.php',
 	'pSettings' => 'player_settings.php',
+	'newChar' => 'new_char.php',
 	'createChar' => 'create_char.php',
-	'createChar' => 'create_char.php',
-	'worldInfo' => 'world.php'
+	'worldInfo' => 'world.php',
 	);
 $pages_char = array(
 	//character specific actions, requires character id

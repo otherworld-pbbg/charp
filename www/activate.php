@@ -77,7 +77,7 @@ if (isset($_POST["username"])&&isset($_POST["activation"])&&isset($_POST["type2"
 						}
 						else {
 							include_once(PRIV_PATH . 'header.php');
-							para("Your password was changed successfully!");
+							infomsg("Your password was changed successfully!");
 							para("Now you can log in with your new password at the <a href='index.php?page=login'>login page</a>.");
 							$displayForm = false;
 						}
@@ -99,7 +99,7 @@ if (isset($_POST["username"])&&isset($_POST["activation"])&&isset($_POST["type2"
 		}
 		else {
 			include_once(PRIV_PATH . 'header.php');
-			para("The username was invalid! Only alphanumeric characters and the underscore are allowed. Try again.");
+			errormsg("The username was invalid! Only alphanumeric characters and the underscore are allowed. Try again.");
 		}
 		
 	}

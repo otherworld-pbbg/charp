@@ -48,7 +48,7 @@ if ($displayForm)
 		'method'=>'post',
 		'class'=>'narrow'));
 	starttag("p");
-	ptag("label", "Username: ", array('for' => 'username'));
+	ptag("label", "Username: ", array('for' => 'username', 'class' => 'minwide'));
 	ptag("input", "", array(
 		'type' => 'text',
 		'id' => 'username',
@@ -58,7 +58,7 @@ if ($displayForm)
 	closetag("p");
 	
 	starttag("p");
-	ptag("label", "Password: ", array('for' => 'password'));
+	ptag("label", "Password: ", array('for' => 'password', 'class' => 'minwide'));
 	ptag("input", "", array(
 		'type' => 'password',
 		'id' => 'password',

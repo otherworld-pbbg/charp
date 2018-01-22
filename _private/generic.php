@@ -1,6 +1,22 @@
 <?php
 require_once("tags_printer.php");//errormsg, infomsg function
+require_once("dictionary.php");
 require_once("classes/custom_error.php");
+require_once("classes/user.php");
+
+function setBetween($val, $min, $max, $default) {
+	if (!is_numeric($val)) return $default;
+	if ($val<$min) return $min;
+	if ($val>$max) return $max;
+	return $val;
+}
+
+function setBint($val, $min, $max, $default) {
+	if (!is_numeric($val)) return $default;
+	if ($val<$min) return $min;
+	if ($val>$max) return $max;
+	return round($val);
+}
 
 function queryDelete($mysqli, $table, $where, $order, $limit=0) {
 	if ($limit==0) $sql = "DELETE FROM `$table` WHERE $where ORDER BY $order";
@@ -13,20 +29,36 @@ function interpretMsg($msg) {
 	switch ($msg) {
 		case "not_yours":
 		$e = "You're trying to view someone else's character.";
+		errormsg($e);
 		break;
 		case "no_charid":
 		$e = "You're trying to view a character specific page but the character id is missing.";
+		errormsg($e);
 		break;
 		case "no_login":
 		$e = "You tried to view a page that requires a login without being logged in.";
+		errormsg($e);
 		break;
 		case "invalid_char":
 		$e = "You tried to view a character who doesn't exist.";
+		errormsg($e);
+		break;
+		case "desc_fail":
+		$e = "Adding character description failed.";
+		errormsg($e);
+		break;
+		case "ccreate_fail":
+		$e = "Character creation failed.";
+		errormsg($e);
+		break;
+		case "ccreate_success":
+		$e = "A character was created successfully.";
+		infomsg($e);
 		break;
 		default:
 		$e = "Unknown error message.";
+		errormsg($e);
 	}
-	erromsg($e);
 }
 
 function isUsername($element)
@@ -80,15 +112,17 @@ function generateActivationCode($mysqli, $username, $email, $passhash, $type=1, 
 	$activation = getRandomPhrase();
 	$activation = $mysqli->real_escape_string($activation);
 	
-	if ($type==3) {
+	if ($type==3) {//password reset
 		$info = getExistingAccount($mysqli, $username);
+		if (is_a($info, "CustomError")) return $info;
 		if ($info->email!=$email) {
 			$e = new CustomError("wrong_email");
 			return $e;
 		}	
 	}
-	if ($type==2) {
+	if ($type==2) {//email change
 		$info = getExistingAccount($mysqli, $username);
+		if (is_a($info, "CustomError")) return $info;
 		if ($info->passhash2!=$passhash) {
 			$e = new CustomError("wrong_password");
 			return $e;
@@ -188,9 +222,8 @@ function activateAccount($mysqli, $username, $activation) {
 	$res = $mysqli->query($sql);
 	if ($res->num_rows) {
 		$row = mysqli_fetch_object($res);
-		$sql2 = "INSERT INTO `users` (`username`, `passhash2`, `email`, `joined`) VALUES ('$row->username', '$row->passhash', '$row->email', CURRENT_TIMESTAMP())";
-		$mysqli->query($sql2);
-		$result = $mysqli->insert_id;
+		$newUser = new User($mysqli, 0, $row->username, $row->passhash, $row->email);//now this can call user creation from the constructor
+		$result = $newUser->getId();
 		if ($result) {
 			$r=queryDelete($mysqli, "pending_users", "`uid`=$row->uid", "`uid`", 1);
 			if ($r==0) {

@@ -1,5 +1,6 @@
 <?php
 include_once("generic.php");
+include_once("dictionary.php");
 $displayForm = true;
 
 if (isset($_POST["username"])&&isset($_POST["password"])&&isset($_POST["email"])&&isset($_POST["submit_btn"]))
@@ -20,7 +21,7 @@ if (isset($_POST["username"])&&isset($_POST["password"])&&isset($_POST["email"])
 				include_once "header.php";
 				infomsg($check->getMsg());
 			}
-			else if ($check2==1) {
+			else {
 				include_once "header.php";
 				para("Activation code was sent to the email you provided. Follow the instructions in the email. If the email doesn't come through, you can have it resent. It might go in the spam folder, so check there first.");
 				$displayForm = false;

@@ -13,3 +13,11 @@
 	display: inline-block;
 	min-width: 160px;
 }
+
+.narrow {
+	max-width: 500px;
+}
+
+textarea {
+	max-width: 450px;
+}

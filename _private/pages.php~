@@ -1,8 +1,10 @@
 <?php
 //error_reporting(E_ALL);
 //ini_set('display_errors', 1);
+include_once('generic.php');
 include_once('classes/user.php');
 include_once('classes/character.php');
+
 //list of page handles and corresponding links will be here
 $pages_ext = array(
 	//pages that don't require you to be logged in
@@ -15,10 +17,11 @@ $pages_ext = array(
 	);
 $pages_loggedin = array(
 	//logged in
-	"pIndex" => "player_index.php",
-	"pSettings" => "player_settings.php",
-	"createChar" => "create_char.php",
-	"createChar2" => "create_char2.php"
+	'pIndex' => 'player_index.php',
+	'pSettings' => 'player_settings.php',
+	'createChar' => 'create_char.php',
+	'createChar' => 'create_char.php',
+	'worldInfo' => 'world.php'
 	);
 $pages_char = array(
 	//character specific actions, requires character id

@@ -23,7 +23,7 @@ else {
 			else {
 				$chatId = $curChar->getCurrentChat();
 				if (!$chatId) {
-					echo "Not currently in chat.";
+					echo "Not currently in chat.<br/>";
 				}
 				else {
 					include_once(PRIV_PATH . 'classes/chat.php');
