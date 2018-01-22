@@ -1,0 +1,76 @@
+<?php
+include_once('header2.php');
+include_once('classes/location.php');
+if (isset($_GET['msg'])) interpretMsg($_GET['msg']);
+
+ptag('h1', 'Player Index');
+$lcount = $player->countLogins();
+if ($lcount==1) {
+	para("Hi there! Since you're new, I thought I'd welcome you to the game. This is still in development, so there might not be much to see, but I hope you'll come back when it's finished.");
+}
+else para("Welcome back. You have logged in " . $lcount . " times so far.");
+starttag('div', '', array('class' => 'row'));
+	starttag('div', '', array('class' => 'col-md-6'));
+		starttag('div', '', array('class' => 'panel'));
+		$charlist = $player->getCharacters();
+		if (!$charlist) {
+			starttag('p', "You don't have any characters at the moment. Would you like to ");
+			ptag('a', 'create one', array('href' => 'index.php?page=newChar'));
+			echo '?';
+			closetag('p');
+		}
+		else {
+			?>
+			<script>
+			$(document).ready(function(){
+				$('[data-toggle="popover"]').popover(); 
+			});
+			</script>
+			<?php
+			ptag('h2', 'List of characters');
+			starttag('ul');
+			foreach($charlist as $c) {
+				$cmemo = $player->getMemo($c->getId());
+				$pl = new Location($c->getLocation());
+				$locname = $pl->getName();
+				starttag('li');
+				ptag('a', $c->getName(), array(
+					'href' => 'index.php?page=cIndex&charid=' . $c->getId(),
+					'class' => 'minwide'
+					));
+				if ($cmemo) {
+				ptag('button', 'memo', array(
+					'type' => 'button',
+					'class' => 'btn btn-secondary btn-sm',
+					'title' => 'memo',
+					'data-container' => 'body',
+					'data-toggle' => 'popover',
+					'data-placement' => 'right',
+					'data-content' => $cmemo['contents'],
+					'data-original-title' => 'memo'
+					));
+				}
+					starttag('ul');
+						ptag('li', 'Loc: ' . $locname);
+					closetag('ul');
+				closetag('li');
+			}
+			closetag('ul');
+		}
+		closetag('div');//end panel
+	closetag('div');//endcol
+	starttag('div', '', array('class' => 'col-md-6'));
+		starttag('div', '', array('class' => 'panel'));
+			starttag('div', '', array('class' => 'panel-heading'));
+				ptag('h3', 'Player controls');
+			closetag('div');
+			starttag('div', '', array('class' => 'panel-body'));
+				ptag('a', 'Create new character', array('href' => 'index.php?page=newChar'));
+			closetag('div');
+			starttag('div', '', array('class' => 'panel-body'));
+				ptag('a', 'Familiarize yourself with the world', array('href' => 'index.php?page=worldInfo'));
+			closetag('div');
+		closetag('div');//end panel
+	closetag('div');//endcol
+closetag('div');//endrow
+?>

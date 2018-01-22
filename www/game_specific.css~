@@ -1,0 +1,10 @@
+.centralized {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.minwide {
+	display: inline-block;
+	min-width: 160px;
+}

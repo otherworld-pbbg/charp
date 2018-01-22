@@ -1,0 +1,102 @@
+<?php
+
+class Character {
+	private $mysqli;
+	private $id;
+	private $name;
+	private $owner;
+	
+	public function __construct($mysqli, $id=0, $name='', $owner=0) {
+		$this->mysqli = $mysqli;
+		$this->id = $id;
+		$this->name = $name;
+		$this->owner = $owner;
+		
+		if ($id>0 && $owner == 0) $this->fetchFromDB();//It's possible to initialize this object with all the necessary information, but if only id is given, it will get the rest from the db
+	}
+	
+	private function fetchFromDB() {
+		$sql = "SELECT `name`, `owner` FROM `characters` WHERE `uid`=$this->id LIMIT 1";
+		$res = $this->mysqli->query($sql);
+		if ($res->num_rows>0) {
+			$arr = $res->fetch_assoc();
+			$this->name = $arr["name"];
+			$this->owner = $arr["owner"];
+			return true;
+		}
+		return false;
+	}
+	
+	public function checkIfExists() {
+		return $this->fetchFromDB();
+	}
+	
+	public function addNew($name, $owner) {
+		$sql = "INSERT INTO `characters` (`uid`, `name`, `owner`)"
+		. "VALUES (NULL, '$name', '$owner')";
+		$this->mysqli->query($sql);
+		if ($this->mysqli->affected_rows==1) {
+			$this->id = $this->mysqli->insert_id;
+			$this->name = $name;
+			$this->owner = $owner;
+			return $this->id;
+		}
+		return false;
+	}
+	
+	public function getId() {
+		return $this->id;
+	}
+	
+	public function getName() {
+		if ($this->name == '') return '(unnamed)';
+		return $this->name;
+	}
+	
+	public function getOwner() {
+		return $this->owner;
+	}
+	
+	public function changeName($newName) {
+		$sql = "UPDATE `characters` SET `name`='$newName' WHERE `uid`=$this->id LIMIT 1";
+		$this->mysqli->query($sql);
+		if ($this->mysqli->affected_rows==1) {
+			$this->name = $newName;
+			return true;
+		}
+		return false;
+	}
+	
+	public function getDescription() {
+		$sql = "SELECT `uid`, `contents` FROM `descriptions` WHERE `charid`=" . $this->id . " LIMIT 1";
+		$res = $this->mysqli->query($sql);
+		if ($res->num_rows==1) {
+			return $res->fetch_assoc();
+		}
+		return false;
+	}
+	
+	public function setDescription($newDescription) {
+		$old = $this->getDescription();
+		if (!$old) {
+			$sql = "INSERT INTO `descriptions` (`uid`, `charid`, `contents`) VALUES (NULL, $this->id, '$newDescription')";
+			$this->mysqli->query($sql);
+			if ($this->mysqli->affected_rows==1) return $this->mysqli->insert_id;
+		}
+		else if ($old["contents"] == $newDescription) {
+			return false;//trying to save without changes
+		}
+		else {
+			$sql = "UPDATE `descriptions` SET `contents`='$newDescription' WHERE `uid`=" . $old["uid"] . " LIMIT 1";
+			$this->mysqli->query($sql);
+			if ($this->mysqli->affected_rows==1) return $old["uid"];
+			else return false;
+		}
+	}
+	
+	public function say($chatO, $contents) {
+		//to do: Check that person isn't muted
+		return $chatO->addMessage($this->id, $contents);
+	}
+}
+?>
