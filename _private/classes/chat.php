@@ -8,11 +8,16 @@ class Chat {
 	private $name;
 	private $summary;
 
-	public function __construct($mysqli, $id=0) {
+	public function __construct($mysqli, $id=0, $location=0, $author=0, $name='', $summary='') {
 		$this->mysqli = $mysqli;
 		$this->id = $id;
+		$this->location = $location;
+		$this->author = $author;
+		$this->name = $name;
+		$this->summary = $summary;
 		
-		if ($id>0) $this->fetchFromDB();
+		if ($id>0&&$location==0&&$author==0&&$name=='') $this->fetchFromDB();
+		else if ($id == 0) $this->addNew($location, $author, $name, $summary);
 	}
 	
 	private function fetchFromDB() {
@@ -25,6 +30,7 @@ class Chat {
 			$this->name = $arr["name"];
 			$this->summary = $arr["summary"];
 		}
+		else $this->id = 0;
 	}
 	
 	public function addNew($location, $author, $name, $summary) {
@@ -33,6 +39,7 @@ class Chat {
 		$this->mysqli->query($sql);
 		if ($this->mysqli->affected_rows==1) {
 			$this->id = $this->mysqli->insert_id;
+			$this->location = $location;
 			$this->author = $author;
 			$this->name = $name;
 			$this->summary = $summary;
@@ -54,7 +61,7 @@ class Chat {
 		return $this->name;
 	}
 	
-	public function geSummary() {
+	public function getSummary() {
 		return $this->summary;
 	}
 	
@@ -87,6 +94,13 @@ class Chat {
 		return false;
 	}
 	
+	public function addParticipant($charid) {
+		$sql = "INSERT INTO `chat_participants` (`uid`, `chat`, `charid`, `joined`, `leaving`) VALUES (NULL, " . $this->id . ", $charid, CURRENT_TIMESTAMP(), '0000-00-00 00:00:00')";
+		$this->mysqli->query($sql);
+		if ($this->mysqli->affected_rows==1) return $this->mysqli->insert_id;
+		return false;
+	}
+	
 	public function getMessages($lastseenID=0) {
 		$sql = "SELECT `uid`, `actor`, `timestamp`, `contents` FROM `chat_msg` WHERE `chat`=" . $this->id . " AND `uid`>$lastseenID ORDER BY `uid`";
 		$res = $this->mysqli->query($sql);
@@ -105,6 +119,19 @@ class Chat {
 		$this->mysqli->query($sql);
 		if ($this->mysqli->affected_rows==1) return $this->mysqli->insert_id;
 		return false;
+	}
+	
+	public function printJoinLink($joinerid) {
+		ptag('a', 'Join ' . $this->getName(), array(
+			'href' => 'index.php?page=joinChat&charid=' . $joinerid . '&chat=' . $this->id
+			));
+	}
+	
+	public function printLeaveLink($leaverid) {
+
+		ptag('a', 'Leave ' . $this->getName(), array(
+			'href' => 'index.php?page=leaveChat&charid=' . $leaverid . '&chat=' . $this->id
+			));
 	}
 }
 ?>

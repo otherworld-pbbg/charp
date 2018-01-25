@@ -21,3 +21,16 @@
 textarea {
 	max-width: 450px;
 }
+
+div.chat
+{
+	width: 600px;
+	max-height: 400px;
+	padding-top:10px;
+	padding-bottom:15px;
+	margin-left:20px;
+	margin-right:20px;
+	margin-top:15px;
+	margin-bottom:20px;
+	overflow:auto;
+}

@@ -4,6 +4,14 @@ require_once("dictionary.php");
 require_once("classes/custom_error.php");
 require_once("classes/user.php");
 
+function customRedirect($link, $pname) {
+	header('Location: ' . $link);
+	//to do: add alternative redirect here
+	include_once('header2.php');
+	para("Redirect failed. Click below to go where you were supposed to.");
+	backlink($pname, $link);
+}
+
 function setBetween($val, $min, $max, $default) {
 	if (!is_numeric($val)) return $default;
 	if ($val<$min) return $min;
@@ -55,8 +63,16 @@ function interpretMsg($msg) {
 		$e = "A character was created successfully.";
 		infomsg($e);
 		break;
+		case "cname_success":
+		$e = "Character name was changed successfully.";
+		infomsg($e);
+		break;
+		case "cdesc_success":
+		$e = "Character description was updated successfully.";
+		infomsg($e);
+		break;
 		default:
-		$e = "Unknown error message.";
+		$e = "Unknown message code.";
 		errormsg($e);
 	}
 }

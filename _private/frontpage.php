@@ -31,4 +31,3 @@ ptag("li", "Death is irreversible");
 ptag("li", "People are allowed to believe in reincarnation, but even if you were someone else in a past life, you shouldn't let it define who you become in this one");
 closetag("ul");
 ?>
-<button type="button" class="btn btn-secondary" title="Popover Title" data-container="body" data-toggle="popover" data-placement="top" data-content="Vivamus sagittis lacus vel augue laoreet rutrum faucibus.">Right</button>

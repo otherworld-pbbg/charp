@@ -25,7 +25,11 @@ $pages_loggedin = array(
 	);
 $pages_char = array(
 	//character specific actions, requires character id
-	"cIndex" => "char_index.php"
+	"cIndex" => "char_index.php",
+	'changeName' => 'change_name.php',
+	'changeDesc' => 'change_desc.php',
+	"joinChat" => "join_chat.php",
+	"leaveChat" => "leave_chat.php"
 );
 
 $page = false;

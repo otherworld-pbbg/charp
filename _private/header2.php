@@ -30,7 +30,8 @@ echo "<link rel='icon' type='image/x-icon' href='" . BASE_URL . "/favicon.ico'/>
 ptag ("a", "Otherworld", array('href' => 'index.php', 'class' => 'navbar-brand'));
 closetag("div");
 starttag('ul', "", array('class' => 'nav navbar-nav navbar-right'));
-ptag ('li', 'Logged in as ' . $player->getUsername());//player is always set in pages if login is valid
+if (!isset($player)) ptag ('li', 'If you see this, report to administration');
+else ptag ('li', 'Logged in as ' . $player->getUsername());//player is always set in pages if login is valid
 //There will be a logout link here eventually
 closetag("ul");
 closetag("div");

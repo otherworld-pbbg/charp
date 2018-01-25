@@ -18,15 +18,16 @@ class User {
 	}
 	
 	private function fetchFromDB() {
-		$sql = "SELECT `username`, `passhash2`, `email`, `joined` FROM `users` WHERE `uid`=$this->id LIMIT 1";
+		$sql = "SELECT `username`, `passhash2`, `email`, `joined` FROM `users` WHERE `uid`=" . $this->id . " LIMIT 1";
 		$res = $this->mysqli->query($sql);
-		if ($res->num_rows>0) {
+		if ($res->num_rows==1) {
 			$arr = $res->fetch_assoc();
 			$this->username = $arr["username"];
 			$this->passhash = $arr["passhash2"];
 			$this->email = $arr["email"];
 			$this->joined = $arr["joined"];
 		}
+		else $this->id = 0;
 	}
 	
 	public function addNew($username, $passhash, $email) {

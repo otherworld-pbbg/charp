@@ -134,6 +134,19 @@ class Character {
 		return $chatO->addMessage($this->id, $contents);
 	}
 	
+	public function join($chatO) {
+		//to do: check that person isn't barred from joining
+		return $chatO->addParticipant($this->id);
+	}
+	
+	public function leave($chatid) {
+		$sql = "UPDATE `chat_participants` SET `leaving`=CURRENT_TIMESTAMP() WHERE `chat`=$chatid AND `charid`=" . $this->id . " AND `leaving`='0000-00-00 00:00:00' ORDER BY `uid` LIMIT 1";
+		//Technically there shouldn't be multiple participations for the same person left hanging, but if there are, it only exits the oldest
+		$this->mysqli->query($sql);
+			if ($this->mysqli->affected_rows==1) return true;
+			else return false;
+	}
+	
 	public function getCurrentChat() {
 		$sql = "SELECT `chat` FROM `chat_participants` WHERE `charid`=" . $this->id . " AND `leaving`='0000-00-00 00:00:00' ORDER BY `uid` DESC LIMIT 1";
 		$res = $this->mysqli->query($sql);

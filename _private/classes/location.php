@@ -43,7 +43,7 @@ class Location {
 	}
 	
 	public function getName() {
-		if ($this->id==0) return 'off-game';
+		if ($this->id==0) return 'The Limbo';
 		if ($this->name == '') return '(unnamed)';
 		return $this->name;
 	}
@@ -93,6 +93,20 @@ class Location {
 				closetag('ul');
 			}
 		}
+	}
+	
+	public function getChats() {
+		$sql = "SELECT `uid`, `author`, `name`, `summary` FROM `chats` WHERE `location`=" . $this->id . " ORDER BY `uid`";
+		$res = $this->mysqli->query($sql);
+		if ($res->num_rows>0) {
+			$retArr = array();
+			while ($arr = $res->fetch_assoc()) {
+				$temp = new Chat($this->mysqli, $arr['uid'], $this->id, $arr["author"], $arr["name"], $arr["summary"]);
+				$retArr[] = $temp;
+			}
+			return $retArr;
+		}
+		return false;
 	}
 }
 ?>
