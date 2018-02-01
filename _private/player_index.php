@@ -66,10 +66,17 @@ starttag('div', '', array('class' => 'row'));
 			closetag('div');
 			starttag('div', '', array('class' => 'panel-body'));
 				ptag('a', 'Create new character', array('href' => 'index.php?page=newChar'));
-			closetag('div');
+			closetag('div');//end panel body
 			starttag('div', '', array('class' => 'panel-body'));
 				ptag('a', 'Familiarize yourself with the world', array('href' => 'index.php?page=worldInfo'));
-			closetag('div');
+			closetag('div');//end panel body
+
+			if ($player->checkRight(R_VIEWLOG, YES)) {
+				starttag('div', '', array('class' => 'panel-body'));
+					ptag('a', 'View latest logins', array('href' => 'index.php?page=latestLogins'));
+				closetag('div');//end panel body
+			}
+			closetag('div');//end panel body
 		closetag('div');//end panel
 	closetag('div');//endcol
 closetag('div');//endrow

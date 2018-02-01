@@ -138,6 +138,48 @@ class User {
 			if ($this->mysqli->affected_rows==1) return $old["uid"];
 			else return false;
 		}
+		return false;
+	}
+	
+	public function getRight($right) {
+		$sql = "SELECT `uid`, `value` FROM `user_rights` WHERE `permission`='$right' AND `userid`=" . $this->id . " LIMIT 1";
+		$res = $this->mysqli->query($sql);
+		if ($res->num_rows==1) {
+			return $res->fetch_assoc();
+		}
+		return false;//no matching row
+	}
+	
+	public function setRight($right, $newValue) {
+		$old = $this->getRight($right);
+		if (!$old) {
+			$sql = "INSERT INTO `user_rights` (`uid`, `userid`, `permission`, `value`) VALUES (NULL, $this->id, '$right', '$newValue')";
+			$this->mysqli->query($sql);
+			if ($this->mysqli->affected_rows==1) return $this->mysqli->insert_id;
+		}
+		else if ($old['value'] == $newValue) {
+			return false;//trying to save without changes
+		}
+		else {
+			$sql = "UPDATE `user_rights` SET `value`='$newValue' WHERE `uid`=" . $old['uid'] . " AND `permission`='$right' LIMIT 1";
+			$this->mysqli->query($sql);
+			if ($this->mysqli->affected_rows==1) return $old['uid'];
+			else return false;
+		}
+		return false;
+	}
+	
+	public function checkRight($right, $compare, $method='equals') {
+		$old = $this->getRight($right);
+		if (!$old) return false;
+		if ($method == 'equals') return $old['value'] == $compare;
+		if ($method == 'lessthan') return $old['value'] < $compare;
+		if ($method == 'morethan') return $old['value'] > $compare;
+		return false;//Unknown method
+	}
+	
+	public function grantRight($receiver, $right, $newValue) {
+		return $receiver->setRight($right, $newValue);//assuming receiver is a valid User
 	}
 }
 ?>

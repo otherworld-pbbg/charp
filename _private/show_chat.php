@@ -19,13 +19,13 @@ window.onload = function() {
 }
 
 function enter(e) {
-    if (e.keyCode == 13) {
-        var msg = $('#saybox').val();
+	if (e.keyCode == 13) {
+		var msg = $('#saybox').val();
 		if (msg != "") {
 			sendMsg(charId, msg);
 		}
 		$('#saybox').val("");
-    }
+	}
 }
 
 $('#say_btn').on('click', function(event) {

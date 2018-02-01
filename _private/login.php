@@ -26,7 +26,7 @@ if (isset($_POST["username"])&&isset($_POST["password"])&&isset($_POST["submit_b
 			}
 			else {
 				include_once "header.php";
-				starttag('div', '', array('class'=>'alert alert-warning'));
+				starttag('div', '', array('class' => 'alert alert-warning'));
 				para("Wrong password!");
 				para("If you have a valid email account associated with your Otherworld account, you can go to <a href='index.php?page=reset'>this page</a> to have your password reset. However, if your account was created before we started requiring a valid email, you need to contact admin for a manual reset. After you get to your account, be sure to update your email address if it's not already up to date, so that if you forget your password again, you can reset it any time. Basically if you haven't logged in since 2017-09-04, your password no longer works.");
 				closetag('div');
@@ -44,17 +44,17 @@ if ($displayForm)
 {
 	include_once "header.php";
 	starttag("form", "", array(
-		'action'=>'index.php?page=login',
-		'method'=>'post',
-		'class'=>'narrow'));
+		'action' => 'index.php?page=login',
+		'method' => 'post',
+		'class' => 'narrow'));
 	starttag("p");
 	ptag("label", "Username: ", array('for' => 'username', 'class' => 'minwide'));
 	ptag("input", "", array(
 		'type' => 'text',
 		'id' => 'username',
 		'name' => 'username',
-		'size'=>20,
-		'maxlength'=>20));
+		'size' => 20,
+		'maxlength' => 20));
 	closetag("p");
 	
 	starttag("p");
@@ -63,8 +63,8 @@ if ($displayForm)
 		'type' => 'password',
 		'id' => 'password',
 		'name' => 'password',
-		'size'=>20,
-		'maxlength'=>32));
+		'size' => 20,
+		'maxlength' => 32));
 	closetag("p");
 	
 	starttag("p");

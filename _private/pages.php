@@ -22,6 +22,8 @@ $pages_loggedin = array(
 	'newChar' => 'new_char.php',
 	'createChar' => 'create_char.php',
 	'worldInfo' => 'world.php',
+	'latestLogins' => 'latest_logins.php',
+	'viewPlayer' => 'view_player.php'
 	);
 $pages_char = array(
 	//character specific actions, requires character id

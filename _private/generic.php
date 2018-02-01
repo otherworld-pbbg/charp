@@ -305,4 +305,17 @@ function backlink($pname, $url) {
 	ptag('a', "[Return to $pname]", array('href' => "$url"));
 	closetag('p');
 }
+
+function getActivityLog($mysqli, $limit=100) {
+	$retArr = array();
+	$sql = "SELECT `userFK` as `user`, `timestamp` as `time` FROM `activity_log` ORDER BY `uid` DESC LIMIT $limit";
+	$res = $mysqli->query($sql);
+	if ($res->num_rows) {
+		while ($row = mysqli_fetch_assoc($res)) {
+			$retArr[] = $row;
+		}
+		return $retArr;
+	}
+	else return false;
+}
 ?>

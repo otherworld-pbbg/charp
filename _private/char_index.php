@@ -26,7 +26,7 @@ ptag('button', 'Save', array(
 closetag('form');
 starttag('p', 'Current character: ' . $curChar->getName());
 ptag('button', 'Change', array(
-	'type'=> 'button',
+	'type' => 'button',
 	'id' => 'toggle',
 	'class' => 'btn btn-secondary btn-sm align-text-bottom',
 	'onClick' => 'toggleForm(1)'
@@ -63,7 +63,7 @@ if (!$desc) {
 else echo 'Description: ' . $oldval . ' ';
 
 ptag('button', 'Change', array(
-	'type'=> 'button',
+	'type' => 'button',
 	'id' => 'toggle2',
 	'class' => 'btn btn-secondary btn-sm align-text-bottom',
 	'onClick' => 'toggleForm(2)'

@@ -11,9 +11,9 @@ This page does not attach the header because there might be pages that
 redirect via header and it would fail if the page printed text before it was
 called.
 */
-//-------------------------constants go here---------------------------------
+
 define('PRIV_PATH', '../_private/');//note that unlike in earlier versions, this also includes the last backslash, so don't double it
-//------------------------end of constants--------------------------------------
+require_once(PRIV_PATH . "constants.php");
 require_once(PRIV_PATH . "conn_details.php");//defines host, dbname, user, pass, also defines BASE_URL
 require_once(PRIV_PATH . "tags_printer.php");//html generator
 

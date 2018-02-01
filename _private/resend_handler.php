@@ -13,7 +13,7 @@ if (isset($_POST["email"])&&isset($_POST["type"])) {
 		para("The email is on the way! Check your inbox in a moment (and spam folder if it's not in the former) and follow the instructions. Note that it might take a while longer on certain mail providers (mainly gmail), so be patient.");
 		$displayForm = false;
 	}
-	else  {
+	else {
 		include_once('header.php');
 		para("Resending activation code failed. Make sure the email address is correct. Of course if there is no pending activation attached to this email address, there is nothing to resend.");
 		include_once('resend.php');
