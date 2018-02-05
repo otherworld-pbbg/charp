@@ -23,7 +23,7 @@ else {
 			else {
 				$chatId = $curChar->getCurrentChat();
 				if (!$chatId) {
-					echo "Not currently in chat.<br/>";
+					echo '--- (not in chat)';
 				}
 				else {
 					include_once(PRIV_PATH . 'classes/chat.php');
@@ -37,20 +37,26 @@ else {
 						$lastseenID = round($_POST['lastseen']);
 					}
 					else $lastseenID = $curChar->getLastSeen($chatId);
-					$msgs = $curChat->getMessages($lastseenID);
-					if ($msgs) {
-						foreach ($msgs as $m) {
-							$actor = new Character($mysqli, $m['actor']);
-							starttag('p');
-							echo '[' . $m['timestamp'] . '] ';
-							echo $actor->getName();
-							echo ': "';
-							echo $m['contents'];
-							echo '"';
-							closetag('p');
-							$lastseen = $m['uid'];
+					
+					if (isset($_POST['justcount'])) {
+						echo $curChat->countUnseen($lastseenID);
+					}
+					else {
+						$msgs = $curChat->getMessages($lastseenID);
+						if ($msgs) {
+							foreach ($msgs as $m) {
+								$actor = new Character($mysqli, $m['actor']);
+								starttag('p');
+								echo '[' . $m['timestamp'] . '] ';
+								echo $actor->getName();
+								echo ': "';
+								echo $m['contents'];
+								echo '"';
+								closetag('p');
+								$lastseen = $m['uid'];
+							}
+							$curChar->setLastSeen($chatId, $lastseen);
 						}
-						$curChar->setLastSeen($chatId, $lastseen);
 					}
 				}
 			}

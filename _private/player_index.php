@@ -20,16 +20,12 @@ starttag('div', '', array('class' => 'row'));
 			closetag('p');
 		}
 		else {
-			?>
-			<script>
-			$(document).ready(function(){
-				$('[data-toggle="popover"]').popover(); 
-			});
-			</script>
-			<?php
+			$charids = array();
+			
 			ptag('h2', 'List of characters');
 			starttag('ul');
 			foreach($charlist as $c) {
+				$charids[] = $c->getId();
 				$cmemo = $player->getMemo($c->getId());
 				$pl = new Location($c->getLocation());
 				$locname = $pl->getName();
@@ -52,10 +48,49 @@ starttag('div', '', array('class' => 'row'));
 				}
 					starttag('ul');
 						ptag('li', 'Loc: ' . $locname);
+						starttag('li', 'New msgs: ');
+							ptag('span', '', array('id' => 'counter-' . $c->getId()));
+						closetag('li');
 					closetag('ul');
 				closetag('li');
 			}
 			closetag('ul');
+			?>
+			<script>
+			var characters = <?php echo json_encode($charids) ?>;
+			$(document).ready(function(){
+				$('[data-toggle="popover"]').popover();
+				for (var i=0; i<characters.length; i++) {
+					countNewEvents(characters[i]);
+				}
+				var seconds = 10;
+				setInterval(refresh, 1000*seconds);
+			});
+			
+			function updateCounter(contents, charId) {
+				var countername = '#counter-' + charId;
+				var display = $(countername);
+				if (contents == '-1') contents = 'err';
+				display.html(contents);
+			}
+					
+			function refresh() {
+				for (var i=0; i<characters.length; i++) {
+					countNewEvents(characters[i]);
+				}
+			}
+			
+			function countNewEvents(charId) {
+				$.ajax('get_messages.php', {
+					'method': 'POST',
+					'data': {'charId': charId, 'justcount': 'yes'},
+					'success': function (response) {
+						updateCounter(response, charId);
+					}
+				});
+			}
+			</script>
+			<?php
 		}
 		closetag('div');//end panel
 	closetag('div');//endcol

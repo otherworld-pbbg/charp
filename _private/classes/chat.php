@@ -114,6 +114,16 @@ class Chat {
 		return false;
 	}
 	
+	public function countUnseen($lastseenID=0) {
+		$sql = "SELECT count(`uid`) as `num` FROM `chat_msg` WHERE `chat`='" . $this->id . "' AND `uid`>$lastseenID ORDER BY `uid`";
+		$res = $this->mysqli->query($sql);
+		if ($res->num_rows==1) {
+			$row = $res->fetch_row();
+			return $row[0];
+		}
+		return -1;//This technically shouldn't happen ever, considering the query returns 0 if there are no hits
+	}
+	
 	public function addMessage($actorid, $contents) {
 		$sql = "INSERT INTO `chat_msg` (`uid`, `chat`, `actor`, `timestamp`, `contents`) VALUES (NULL, ". $this->id .", $actorid, CURRENT_TIMESTAMP(), '$contents')";
 		$this->mysqli->query($sql);
