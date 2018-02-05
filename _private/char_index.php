@@ -6,7 +6,7 @@ if (isset($_GET['msg'])) interpretMsg($_GET['msg']);
 backlink('Player page', 'index.php?page=pIndex');
 
 starttag('div', '', array('class' => 'row'));
-starttag('div', '', array('class' => 'col-md-6'));
+starttag('div', '', array('class' => 'col-lg-4'));
 starttag('div', '', array('class' => 'panel'));
 starttag('form', '', array(
 	'action' => 'index.php?page=changeName&charid=' . $curCharid,
@@ -109,10 +109,10 @@ else {
 }
 closetag('div');
 closetag('div');
-starttag('div', '', array('class' => 'col-md-6'));
-starttag('div', '', array('class' => 'panel'));
 $curChatId = $curChar->getCurrentChat();
 if (!$curChatId) {
+	starttag('div', '', array('class' => 'col-lg-8'));
+	starttag('div', '', array('class' => 'panel'));
 	para("You're not currently in chat.");
 	$possibleChats = $curLoc->getChats();
 	if (!$possibleChats) {
@@ -137,17 +137,15 @@ if (!$curChatId) {
 		}
 		closetag('ul');
 	}
+	closetag('div');
+	closetag('div');
 }
 else {
+	starttag('div', '', array('class' => 'col-lg-6'));
 	$curChat = new Chat($mysqli, $curChatId);
 	ptag('h5', 'Current chat: ' . $curChat->getName());
 	include_once('show_chat.php');
-	starttag('p');
-	$curChat->printLeaveLink($curCharid);
-	closetag('p');
 }
-		closetag('div');
-	closetag('div');
 closetag('div');
 backlink('Player page', 'index.php?page=pIndex');
 ?>
