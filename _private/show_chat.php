@@ -7,14 +7,20 @@ para("Notice: Autoscroll is only active when the say box has focus, so if you wa
 <div id="chat" class='chat'>
 </div>
 <input type='text' size='70' id='saybox' onkeypress='return enter(event)'>
-<input type='button' id='say_btn' value='Add'>
+<input type='button' id='say_btn' value='Add' class='btn btn-primary'>
 <?php
+ptag('button', 'Hide list', array(
+	'type' => 'button',
+	'id' => 'toggle-side',
+	'class' => 'btn btn-secondary',
+	'onClick' => 'toggleSidePanel()'
+	));
 starttag('p');
 $curChat->printLeaveLink($curCharid);
 closetag('p');
 ?>
 </div>
-<div class="col-lg-2">
+<div class='col-lg-2' id='sidepane'>
 <div class='panel-heading'>
 <h4>Current participants</h4>
 </div>
@@ -110,5 +116,18 @@ function sendMsg(charId, msg) {
 			updateChat(response);
 		}
 	});
+}
+
+function toggleSidePanel() {
+	if (document.getElementById('sidepane').style.display=='none') {
+		document.getElementById('sidepane').style.display='inline-block';
+		document.getElementById('toggle-side').innerHTML='Hide list';
+		document.getElementById('middle-panel').className = "col-lg-6";
+	}
+	else {
+		document.getElementById('sidepane').style.display='none';
+		document.getElementById('toggle-side').innerHTML='Show list';
+		document.getElementById('middle-panel').className = "col-lg-8";
+	}
 }
 </script>

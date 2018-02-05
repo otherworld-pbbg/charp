@@ -27,7 +27,7 @@ starttag('div', '', array('class' => 'row'));
 			foreach($charlist as $c) {
 				$charids[] = $c->getId();
 				$cmemo = $player->getMemo($c->getId());
-				$pl = new Location($c->getLocation());
+				$pl = new Location($mysqli, $c->getLocation());
 				$locname = $pl->getName();
 				starttag('li');
 				ptag('a', $c->getName(), array(

@@ -71,6 +71,26 @@ function interpretMsg($msg) {
 		$e = "Character description was updated successfully.";
 		infomsg($e);
 		break;
+		case "spawn_success":
+		$e = "Your character has successfully entered the world.";
+		infomsg($e);
+		break;
+		case "already_started":
+		$e = "You can only select a character's starting location once.";
+		errormsg($e);
+		break;
+		case "missing_data":
+		$e = "Required form data is missing.";
+		errormsg($e);
+		break;
+		case "invalid_data":
+		$e = "Invalid form data.";
+		errormsg($e);
+		break;
+		case "invalid_spawning_location":
+		$e = "Invalid starting location.";
+		errormsg($e);
+		break;
 		default:
 		$e = "Unknown message code.";
 		errormsg($e);

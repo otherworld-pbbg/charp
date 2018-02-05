@@ -1,6 +1,4 @@
 <?php
-//error_reporting(E_ALL);
-//ini_set('display_errors', 1);
 include_once('generic.php');
 include_once('classes/user.php');
 include_once('classes/character.php');
@@ -30,8 +28,9 @@ $pages_char = array(
 	"cIndex" => "char_index.php",
 	'changeName' => 'change_name.php',
 	'changeDesc' => 'change_desc.php',
-	"joinChat" => "join_chat.php",
-	"leaveChat" => "leave_chat.php"
+	'joinChat' => 'join_chat.php',
+	'leaveChat' => 'leave_chat.php',
+	'spawn' => 'spawn.php'
 );
 
 $page = false;

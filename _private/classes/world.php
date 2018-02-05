@@ -25,5 +25,26 @@ class World {
 		}
 		return false;
 	}
+	
+	public function getStartingLocations() {
+		$sql = "SELECT `uid`, `name`, `description`, `parent`, `type` FROM `locations` WHERE `spawning`=1 ORDER BY `uid`";
+		$res = $this->mysqli->query($sql);
+		if ($res->num_rows>0) {
+			$retArr = array();
+			while ($arr = $res->fetch_assoc()) {
+				$temp = new Location(
+					$this->mysqli,
+					$arr["uid"],
+					$arr['name'],
+					$arr['parent'],
+					$arr['type'],
+					$arr['description'],
+					1);//spawning
+				$retArr[] = $temp;
+			}
+			return $retArr;
+		}
+		return false;
+	}
 }
 ?>

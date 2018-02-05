@@ -16,6 +16,7 @@ else echo '<meta property="og:description" content="A blob under construction." 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
 <script src="popper.min.js"></script>
 <script src="bootstrap.min.js"></script>
+<script src="minimize_text.js"></script>
 <link rel="stylesheet" href="bootstrap.css">
 <link rel="stylesheet" href="game_specific.css">
 <?php
