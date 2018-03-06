@@ -28,7 +28,7 @@ class Character {
 			//data was already passed
 			$this->fetchFromDB();
 		}
-		else if ($this->uid == 0) $this->addNew();
+		else if ($this->uid == 0 && $this->owner>0) $this->addNew();
 		//You don't need to pass $data because the values were already added to class variables in the constructor
 	}
 	
