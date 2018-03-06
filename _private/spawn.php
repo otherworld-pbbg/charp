@@ -12,7 +12,9 @@ else {
 	else {
 		$try = round($_POST['loc']);//eliminates decimal numbers
 		require_once('classes/location.php');
-		$testloc = new Location($mysqli, $try);
+		$testloc = new Location($mysqli, array(
+				'uid' => $try
+			));
 		$targetid = $testloc->getId();//It sets it to 0 if fetch from db failed
 		if (!$targetid) customRedirect('index.php?page=cIndex&charid=' . $curCharid . '&msg=invalid_data', 'Character page');
 		else if (!$testloc->getSpawning()) {

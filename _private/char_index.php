@@ -102,7 +102,9 @@ function toggleForm(f) {
 <?php
 
 $curlocid = $curChar->getLocation();
-$curLoc = new Location($mysqli, $curlocid);
+$curLoc = new Location($mysqli, array(
+		'uid' => $curlocid
+	));
 if (!$curlocid) {
 	para("You are currently in the Limbo, which is the space between locations. In order to enter the world, you need to select a starting location. After this, you are limited by the rules of transit of the world, and can no longer cross long distances in an instant.");
 	//List possible starting locations
@@ -180,7 +182,9 @@ if (!$curChatId) {
 }
 else {
 	starttag('div', '', array('id' => 'middle-panel', 'class' => 'col-lg-6'));
-	$curChat = new Chat($mysqli, $curChatId);
+	$curChat = new Chat($mysqli, array(
+		'uid' => $curChatId
+		));
 	ptag('h5', 'Current chat: ' . $curChat->getName());
 	include_once('show_chat.php');
 }

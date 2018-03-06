@@ -17,7 +17,7 @@ else {
 	}
 	else {
 		$oUser = round($_GET["ouser"]);
-		$player2 = new User($mysqli, $oUser);
+		$player2 = new User($mysqli, array('uid' => $oUser));
 		
 		if (!$player2->getId()) {
 			para("$oUser is not a valid user id. No entry found.");
@@ -40,7 +40,9 @@ else {
 				starttag('ul');
 				foreach($charlist as $c) {
 					$cmemo = $player->getMemo($c->getId());//Note that this memo is from your perspective and not the user's you are viewing
-					$pl = new Location($c->getLocation());
+					$pl = new Location($mysqli, array(
+						'uid' => $c->getLocation()
+						));
 					$locname = $pl->getName();
 					starttag('li', $c->getName());
 					if ($cmemo) {

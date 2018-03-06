@@ -258,7 +258,11 @@ function activateAccount($mysqli, $username, $activation) {
 	$res = $mysqli->query($sql);
 	if ($res->num_rows) {
 		$row = mysqli_fetch_object($res);
-		$newUser = new User($mysqli, 0, $row->username, $row->passhash, $row->email);//now this can call user creation from the constructor
+		$newUser = new User($mysqli, array(
+				'username' => $row->username,
+				'passhash2' => $row->passhash,
+				'email' => $row->email
+			));//now this can call user creation from the constructor
 		$result = $newUser->getId();
 		if ($result) {
 			$r=queryDelete($mysqli, "pending_users", "`uid`=$row->uid", "`uid`", 1);

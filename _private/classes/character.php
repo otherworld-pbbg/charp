@@ -1,63 +1,68 @@
 <?php
 require_once("custom_error.php");
+include_once('character_table.php');
+include_once('description_table.php');
+include_once('participant_table.php');
+include_once('seen_msg_table.php');
 
 class Character {
 	private $mysqli;
-	private $id;
+	private $uid;
 	private $sex;
 	private $name;
 	private $owner;
 	private $location;
+	private $table;
 	
-	public function __construct($mysqli, $id=0, $sex=3, $name='', $owner=0, $location=0) {
+	public function __construct($mysqli, $data) {
 		$this->mysqli = $mysqli;
-		$this->id = $id;
-		$this->sex = $sex;
-		$this->name = $name;
-		$this->owner = $owner;
-		$this->location = $location;
+		$this->uid = isset($data['uid']) ? $data['uid'] : 0;
+		$this->sex = isset($data['sex']) ? $data['sex'] : 3;
+		$this->name = isset($data['name']) ? $data['name'] : '';
+		$this->owner = isset($data['owner']) ? $data['owner'] : 0;
+		$this->location = isset($data['location']) ? $data['location'] : 0;
+		$this->table = new characterTable($this->mysqli);
 		
-		if ($id>0 && $owner == 0) $this->fetchFromDB();//It's possible to initialize this object with all the necessary information, but if only id is given, it will get the rest from the db
-		else if ($id == 0 && $owner>0) {
-			$this->addNew($name, $owner, $sex, $location);//Now it's possible to add this to the database with the constructor
+		if (isset($data['uid'])&&!isset($data['owner'])) {
+			//If uid is set and owner is set, it's assumed all necessary
+			//data was already passed
+			$this->fetchFromDB();
 		}
+		else if ($this->uid == 0) $this->addNew();
+		//You don't need to pass $data because the values were already added to class variables in the constructor
 	}
 	
 	private function fetchFromDB() {
-		$sql = "SELECT `name`, `owner`, `sex`, `location` FROM `characters` WHERE `uid`=$this->id LIMIT 1";
-		$res = $this->mysqli->query($sql);
-		if ($res->num_rows>0) {
-			$arr = $res->fetch_assoc();
-			$this->name = $arr["name"];
-			$this->owner = $arr["owner"];
-			$this->sex = $arr['sex'];
-			$this->location = $arr['location'];
+		$data = $this->table->getData("`uid`=$this->uid", 1);
+		if ($data) {
+			$assoc = $data[0];//There will only be one entry because duplicate keys aren't allowed
+			foreach ($assoc as $key => $value) {
+				$this->{$key} = $value;
+			}
 			return true;
 		}
+		$this->uid = 0;//Signals that the entry isn't valid
 		return false;
 	}
 	
-	public function checkIfExists() {
-		return $this->fetchFromDB();
-	}
-	
-	public function addNew($name, $owner, $sex=3, $location=0) {
-		$sql = "INSERT INTO `characters` (`uid`, `name`, `owner`, `sex`, `location`)"
-		. "VALUES (NULL, '$name', $owner, $sex, $location)";
-		$this->mysqli->query($sql);
-		if ($this->mysqli->affected_rows==1) {
-			$this->id = $this->mysqli->insert_id;
-			$this->name = $name;
-			$this->owner = $owner;
-			$this->sex = $sex;
-			$this->location = $location;
-			return $this->id;
+	private function addNew() {
+		//Now this can only be called from the constructor
+		$data = array(
+			'name' => $this->name,
+			'owner' => $this->owner,
+			'sex' => $this->sex,
+			'location' => $this->location
+			);
+		$result = $this->table->insertRecord($data);
+		if ($result) {
+			$this->uid = $result;
+			return $this->uid;
 		}
-		return false;
+		return false;//uid remains 0, signaling insert failed
 	}
 	
 	public function getId() {
-		return $this->id;
+		return $this->uid;
 	}
 	
 	public function getName() {
@@ -84,29 +89,36 @@ class Character {
 	}
 	
 	public function changeName($newName) {
-		$sql = "UPDATE `characters` SET `name`='$newName' WHERE `uid`=$this->id LIMIT 1";
-		$this->mysqli->query($sql);
-		if ($this->mysqli->affected_rows==1) {
-			$this->name = $newName;
-			return true;
-		}
-		return false;
+		//only pass sanitized text
+		$this->table->updateRecord(array(
+			'uid' => $this->uid,
+			'name' => $newName
+			));
+		
+		$error = $this->table->getErrors();
+		if (!empty($error)) return false;
+		
+		$this->name = $newName;
+		return true;
 	}
 	
 	public function changeLocation($newLoc) {
-		$sql = "UPDATE `characters` SET `location`=$newLoc WHERE `uid`=$this->id LIMIT 1";
-		$this->mysqli->query($sql);
-		if ($this->mysqli->affected_rows==1) {
-			$this->location = $newLoc;
-			return true;
-		}
-		return false;
+		$this->table->updateRecord(array(
+			'uid' => $this->uid,
+			'location' => $newLoc
+			));
+		
+		$error = $this->table->getErrors();
+		if (!empty($error)) return $error[0];
+		
+		$this->location = $newLocation;
+		return true;
 	}
 	
 	public function spawn($newLoc) {
 		//To do: give starting equipment/wealth
 		$check = $this->changeLocation($newLoc);
-		if (!$check) {
+		if (is_a($check, 'CustomError')) {
 			$e = new CustomError('spawn_fail');
 			return $e;
 		}
@@ -114,80 +126,119 @@ class Character {
 	}
 	
 	public function getDescription() {
-		$sql = "SELECT `uid`, `contents` FROM `descriptions` WHERE `charid`=" . $this->id . " LIMIT 1";
-		$res = $this->mysqli->query($sql);
-		if ($res->num_rows==1) {
-			return $res->fetch_assoc();
-		}
+		$dtable = new descriptionTable($this->mysqli);
+		$data = $dtable->getData("`charid`=$this->uid", 1);
+		if ($data) return $data[0];//returns assoc
 		return false;
 	}
 	
 	public function setDescription($newDescription) {
 		$old = $this->getDescription();
+		$dtable = new descriptionTable($this->mysqli);
 		if (!$old) {
-			$sql = "INSERT INTO `descriptions` (`uid`, `charid`, `contents`) VALUES (NULL, $this->id, '$newDescription')";
-			$this->mysqli->query($sql);
-			if ($this->mysqli->affected_rows==1) return $this->mysqli->insert_id;
+			$data = array(
+				'charid' => $this->uid,
+				'contents' => $newDescription
+			);
+			$result = $dtable->insertRecord($data);
+			if ($result) {
+				return $result;
+			}
+			return false;
 		}
-		else if ($old["contents"] == $newDescription) {
+		else if ($old['contents'] == $newDescription) {
 			return false;//trying to save without changes
 		}
 		else {
-			$sql = "UPDATE `descriptions` SET `contents`='$newDescription' WHERE `uid`=" . $old["uid"] . " LIMIT 1";
-			$this->mysqli->query($sql);
-			if ($this->mysqli->affected_rows==1) return $old["uid"];
-			else return false;
+			$dtable->updateRecord(array(
+			'uid' => $old['uid'],
+			'contents' => $newDescription
+			));
 		}
+		$error = $dtable->getErrors();
+		if (!empty($error)) return $error[0];
+		
+		return $old["uid"];
 	}
 	
 	public function say($chatO, $contents) {
 		//to do: Check that person isn't muted
-		return $chatO->addMessage($this->id, $contents);
+		return $chatO->addMessage($this->uid, $contents);
 	}
 	
 	public function join($chatO) {
 		//to do: check that person isn't barred from joining
-		return $chatO->addParticipant($this->id);
+		return $chatO->addParticipant($this->uid);
 	}
 	
 	public function leave($chatid) {
-		$sql = "UPDATE `chat_participants` SET `leaving`=CURRENT_TIMESTAMP() WHERE `chat`=$chatid AND `charid`=" . $this->id . " AND `leaving`='0000-00-00 00:00:00' ORDER BY `uid` LIMIT 1";
-		//Technically there shouldn't be multiple participations for the same person left hanging, but if there are, it only exits the oldest
-		$this->mysqli->query($sql);
-		if ($this->mysqli->affected_rows==1) return true;
+		$ptable = new participantTable($this->mysqli);
+		$data = $ptable->getData("`chat`=$chatid AND `charid`=$this->uid AND `leaving`='0000-00-00 00:00:00'", 1, '`uid` DESC');
+		if ($data) {
+			$assoc = $data[0];//It's possible that somebody is listed multiple times but for simplicity we assume there is only one entry
+		}
 		else return false;
+		
+		$now = date('Y-m-d H:i:s');
+		
+		$ptable->updateRecord(array(
+			'uid' => $assoc['uid'],
+			'leaving' => $now
+		));
+		
+		$error = $ptable->getErrors();
+		if (!empty($error)) return false;
+		
+		return true;
 	}
 	
 	public function getCurrentChat() {
-		$sql = "SELECT `chat` FROM `chat_participants` WHERE `charid`=" . $this->id . " AND `leaving`='0000-00-00 00:00:00' ORDER BY `uid` DESC LIMIT 1";
-		$res = $this->mysqli->query($sql);
-		if ($res->num_rows>0) {
-			$info = $res->fetch_assoc();
-			return $info['chat'];
+		$ptable = new participantTable($this->mysqli);
+		$data = $ptable->getData("`charid`=$this->uid AND `leaving`='0000-00-00 00:00:00'", 1, '`uid` DESC');
+		if ($data) {
+			$assoc = $data[0];//It's possible that somebody is listed multiple times but for simplicity we assume there is only one entry
+			return $assoc['chat'];
 		}
 		return false;
 	}
 	
 	public function getLastSeen($chat) {
-		$sql = "SELECT `msg` FROM `seen_msg` WHERE `viewer`=" . $this->id . " AND `chat`=$chat ORDER BY `uid` DESC LIMIT 1";
-		$res = $this->mysqli->query($sql);
-		if ($res->num_rows>0) {
-			$info = $res->fetch_assoc();
-			return $info['msg'];
+		$smtable = new seenMsgTable($this->mysqli);
+		$data = $smtable->getData("`viewer`=$this->uid AND `chat`=$chat", 1, '`uid` DESC');
+		if ($data) {
+			return $data[0];//This used to just return the number of message but now it
+			//gets everything because we need the uid
 		}
 		return 0;
 	}
 	
 	public function setLastSeen($chat, $msg) {
-		$sql = "UPDATE `seen_msg` SET `msg`=$msg WHERE `viewer`=" . $this->id . " AND `chat`=$chat";
-		$this->mysqli->query($sql);
-		if ($this->mysqli->affected_rows>0) return true;
-		$old = $this->getLastSeen($chat, $msg);
-		if ($old == $msg) return true;//it already exists, no need to add
-		$sql = "INSERT INTO `seen_msg` (`viewer`, `chat`, `msg`) VALUES (" . $this->id . ", $chat, $msg)";
-		$this->mysqli->query($sql);
-		if ($this->mysqli->affected_rows==1) return true;
-		return false;
+		$assoc = $this->getLastSeen($chat);
+		$smtable = new seenMsgTable($this->mysqli);
+		if ($assoc == 0) {
+			//doesn't exist, insert
+			$data = array(
+				'viewer' => $this->uid,
+				'chat' => $chat,
+				'msg' => $msg
+			);
+			$result = $smtable->insertRecord($data);
+			if ($result) {
+				return true;
+			}
+			return false;
+		}
+		else if ($assoc['msg'] == $msg) return true;//it already exists, no need to add
+		else {
+			$smtable->updateRecord(array(
+				'uid' => $assoc['uid'],
+				'msg' => $msg
+			));
+			
+			$error = $smtable->getErrors();
+			if (!empty($error)) return false;
+			return true;
+		}
 	}
 }
 ?>

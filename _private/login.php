@@ -18,7 +18,7 @@ if (isset($_POST["username"])&&isset($_POST["password"])&&isset($_POST["submit_b
 			if (password_verify($_POST["password"], $info->passhash2)) {
 				$_SESSION['logged_user'] = $_POST['username'];
 				$_SESSION['user_id'] = $info->uid;
-				$player = new User($mysqli, $info->uid);
+				$player = new User($mysqli, array('uid' => $info->uid));
 				$player->logLogin();
 				
 				header('Location: index.php?page=pIndex');

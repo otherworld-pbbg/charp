@@ -48,9 +48,9 @@ if ($page)
 	else if (isset($pages_loggedin[$page]))
 	{
 		//check validity of login
-		if (!isset($_SESSION['user_id'])) header('Location: index.php?page=login');
+		if (!isset($_SESSION['user_id'])||$_SESSION['user_id']==0) header('Location: index.php?page=login');
 		else {
-			$player = new User($mysqli, $_SESSION['user_id']);
+			$player = new User($mysqli, array('uid' => $_SESSION['user_id']));
 			//user id should only be placed in the session variable at login if it's valid
 			include_once (dirname(__FILE__) . "/" . $pages_loggedin[$page]);
 		}
@@ -58,15 +58,15 @@ if ($page)
 	else if (isset($pages_char[$page]))
 	{
 		//check validity of login and char
-		if (!isset($_SESSION['user_id'])) header('Location: index.php?page=login&msg=no_login');
+		if (!isset($_SESSION['user_id'])||$_SESSION['user_id']==0) header('Location: index.php?page=login&msg=no_login');
 		else {
-			$player = new User($mysqli, $_SESSION['user_id']);
+			$player = new User($mysqli, array('uid' => $_SESSION['user_id']));
 			if (!isset($_REQUEST['charid'])) header('Location: index.php?page=pIndex&msg=no_charid');
 			else {
 				$curCharid = round($_REQUEST['charid']);//this can be either post or get depending on page
 				//rounding to get rid of possible decimals and other invalid content
-				$curChar = new Character($mysqli, $curCharid);
-				if (!$curChar->checkIfExists()) header('Location: index.php?page=pIndex&msg=invalid_char');
+				$curChar = new Character($mysqli, array('uid' => $curCharid));
+				if (!$curChar->getId()) header('Location: index.php?page=pIndex&msg=invalid_char');//Id gets set as 0 if loading fails
 				else if ($curChar->getOwner()!=$_SESSION['user_id']) header('Location: index.php?page=pIndex&msg=not_yours');
 				else include_once (dirname(__FILE__) . "/" . $pages_char[$page]);
 			}

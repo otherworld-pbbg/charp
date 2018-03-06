@@ -15,7 +15,9 @@ else {
 	
 	if (isset($_SESSION['user_id'])) {
 		if (isset($_POST['charId'])) {
-			$curChar = new Character($mysqli, round($_POST['charId']));
+			$curChar = new Character($mysqli, array(
+				'uid' => round($_POST['charId'])
+				));
 			if ($curChar->getOwner()!=$_SESSION['user_id']) {
 				echo "Unauthorized access<br />";
 			}
@@ -26,12 +28,16 @@ else {
 				}
 				else {
 					include_once(PRIV_PATH . 'classes/chat.php');
-					$curChat = new Chat($mysqli, $chatId);
+					$curChat = new Chat($mysqli, array(
+						'uid' => $chatId
+						));
 					
 					$participants = $curChat->getParticipants();
 					if ($participants) {
 						foreach ($participants as $entry) {
-							$p = new Character($mysqli, $entry['charid']);
+							$p = new Character($mysqli, array(
+								'uid' => $entry['charid']
+								));
 							starttag('li');
 							echo $p->getName() . ' (' . $entry['joined'] . ')';
 							closetag('li');

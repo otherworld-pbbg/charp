@@ -1,55 +1,65 @@
 <?php
+include_once('character_table.php');
+include_once('chat_table.php');
+include_once('chat_msg_table.php');
 
 class Chat {
 	private $mysqli;
-	private $id;
+	private $uid;
 	private $location;
 	private $author;
 	private $name;
 	private $summary;
+	private $table;
 
-	public function __construct($mysqli, $id=0, $location=0, $author=0, $name='', $summary='') {
+	public function __construct($mysqli, $data) {
 		$this->mysqli = $mysqli;
-		$this->id = $id;
-		$this->location = $location;
-		$this->author = $author;
-		$this->name = $name;
-		$this->summary = $summary;
+		$this->uid = isset($data['uid']) ? $data['uid'] : 0;
+		$this->location = isset($data['location']) ? $data['location'] : 0;
+		$this->author = isset($data['author']) ? $data['author'] : 0;
+		$this->name = isset($data['name']) ? $data['name'] : '';
+		$this->summary = isset($data['summary']) ? $data['summary'] : '';
+		$this->table = new chatTable($this->mysqli);
 		
-		if ($id>0&&$location==0&&$author==0&&$name=='') $this->fetchFromDB();
-		else if ($id == 0) $this->addNew($location, $author, $name, $summary);
+		if (isset($data['uid'])&&!isset($data['author'])) {
+			//If uid is set and author is set, it's assumed all necessary
+			//data was already passed
+			$this->fetchFromDB();
+		}
+		else if ($this->uid == 0) $this->addNew();
 	}
 	
-	private function fetchFromDB() {
-		$sql = "SELECT `location`, `author`, `name`, `summary` FROM `chats` WHERE `uid`=" . $this->id . " LIMIT 1";
-		$res = $this->mysqli->query($sql);
-		if ($res->num_rows>0) {
-			$arr = $res->fetch_assoc();
-			$this->location = $arr['location'];
-			$this->author = $arr["author"];
-			$this->name = $arr["name"];
-			$this->summary = $arr["summary"];
+	private function fetchFromDB() {//This is just copypasted from Character
+		$data = $this->table->getData("`uid`=$this->uid", 1);
+		if ($data) {
+			$assoc = $data[0];//There will only be one entry because duplicate keys aren't allowed
+			foreach ($assoc as $key => $value) {
+				$this->{$key} = $value;
+			}
+			return true;
 		}
-		else $this->id = 0;
-	}
-	
-	public function addNew($location, $author, $name, $summary) {
-		$sql = "INSERT INTO `chats` (`uid`, `location`, `author`, `name`, `summary`)"
-		. "VALUES (NULL, $location, $author, '$name', '$summary')";
-		$this->mysqli->query($sql);
-		if ($this->mysqli->affected_rows==1) {
-			$this->id = $this->mysqli->insert_id;
-			$this->location = $location;
-			$this->author = $author;
-			$this->name = $name;
-			$this->summary = $summary;
-			return $this->id;
-		}
+		$this->uid = 0;//Signals that the entry isn't valid
 		return false;
 	}
 	
+	private function addNew() {
+		//Now this can only be called from the constructor
+		$data = array(
+			'location' => $this->location,
+			'author' => $this->author,
+			'name' => $this->name,
+			'summary' => $this->summary
+			);
+		$result = $this->table->insertRecord($data);
+		if ($result) {
+			$this->uid = $result;
+			return $this->uid;
+		}
+		return false;//uid remains 0, signaling insert failed
+	}
+	
 	public function getId() {
-		return $this->id;
+		return $this->uid;
 	}
 	
 	public function getLocation() {
@@ -70,77 +80,94 @@ class Chat {
 	}
 	
 	public function change($newName, $newSummary) {
-		$sql = "UPDATE `chats` SET `name`='$newName', `summary`='$newSummary' WHERE `uid`=$this->id LIMIT 1";
-		$this->mysqli->query($sql);
-		if ($this->mysqli->affected_rows==1) {
-			$this->name = $newName;
-			$this->summary = $newSummary;
-			return true;
-		}
-		return false;
+		if ($this->name == $newName && $this->summary == $newSummary) return false;//No change
+		//only pass sanitized text
+		$this->table->updateRecord(array(
+			'uid' => $this->uid,
+			'name' => $newName,
+			'summary' => $newSummary
+			), 1);//limit 1
+		
+		$error = $this->table->getErrors();
+		if (!empty($error)) return false;
+		
+		$this->name = $newName;
+		$this->summary = $newSummary;
+		return true;
 	}
 	
 	public function getParticipants($currentOnly = true) {
-		if ($currentOnly) $sql = "SELECT `uid`, `charid`, `joined`, `leaving` FROM `chat_participants` WHERE `chat`=" . $this->id . " AND `leaving`='0000-00-00 00:00:00' ORDER BY `uid`";
-		else $sql = "SELECT `uid`, `charid`, `joined`, `leaving` FROM `chat_participants` WHERE `chat`=" . $this->id . " ORDER BY `uid`";
-		$res = $this->mysqli->query($sql);
-		if ($res->num_rows>0) {
-			$retArr = array();
-			while ($arr = $res->fetch_assoc()) {
-				$retArr[] = $arr;
-			}
-			return $retArr;
+		$ptable = new participantTable($this->mysqli);
+		if ($currentOnly) $data = $ptable->getData("`chat`=$this->uid AND `leaving`='0000-00-00 00:00:00'", NULL, '`uid` DESC');
+		else $data = $ptable->getData("`chat`=$this->uid", NULL, '`uid` DESC');
+		if ($data) {
+			return $data;
 		}
 		return false;
 	}
 	
 	public function addParticipant($charid) {
-		$sql = "INSERT INTO `chat_participants` (`uid`, `chat`, `charid`, `joined`, `leaving`) VALUES (NULL, " . $this->id . ", $charid, CURRENT_TIMESTAMP(), '0000-00-00 00:00:00')";
-		$this->mysqli->query($sql);
-		if ($this->mysqli->affected_rows==1) return $this->mysqli->insert_id;
+		$ptable = new participantTable($this->mysqli);
+		$now = date('Y-m-d H:i:s');
+		$data = array(
+			'chat' => $this->uid,
+			'charid' => $charid,
+			'joined' => $now,
+			'leaving' => '0000-00-00 00:00:00'
+			);
+		$result = $ptable->insertRecord($data);
+		if ($result) {
+			return $result;
+		}
 		return false;
 	}
 	
 	public function getMessages($lastseenID=0) {
-		$sql = "SELECT `uid`, `actor`, `timestamp`, `contents` FROM `chat_msg` WHERE `chat`=" . $this->id . " AND `uid`>$lastseenID ORDER BY `uid`";
-		$res = $this->mysqli->query($sql);
-		if ($res->num_rows>0) {
-			$retArr = array();
-			while ($arr = $res->fetch_assoc()) {
-				$retArr[] = $arr;
-			}
-			return $retArr;
+		$cmtable = new chatMsgTable($this->mysqli);
+		$data = $cmtable->getData("`chat`=$this->uid AND `uid`>$lastseenID", NULL, '`uid` ASC');
+		
+		if ($data) {
+			return $data;
 		}
 		return false;
 	}
 	
 	public function countUnseen($lastseenID=0) {
-		$sql = "SELECT count(`uid`) as `num` FROM `chat_msg` WHERE `chat`='" . $this->id . "' AND `uid`>$lastseenID ORDER BY `uid`";
-		$res = $this->mysqli->query($sql);
-		if ($res->num_rows==1) {
-			$row = $res->fetch_row();
-			return $row[0];
+		$cmtable = new chatMsgTable($this->mysqli);
+		$count = $cmtable->getData("`chat`=$this->uid AND `uid`>$lastseenID", NULL, NULL, true);//countOnly=true
+		
+		if ($count) {
+			return $count;
 		}
-		return -1;//This technically shouldn't happen ever, considering the query returns 0 if there are no hits
+		return 0;
 	}
 	
 	public function addMessage($actorid, $contents) {
-		$sql = "INSERT INTO `chat_msg` (`uid`, `chat`, `actor`, `timestamp`, `contents`) VALUES (NULL, ". $this->id .", $actorid, CURRENT_TIMESTAMP(), '$contents')";
-		$this->mysqli->query($sql);
-		if ($this->mysqli->affected_rows==1) return $this->mysqli->insert_id;
+		$cmtable = new chatMsgTable($this->mysqli);
+		$now = date('Y-m-d H:i:s');
+		$data = array(
+			'chat' => $this->uid,
+			'actor' => $actorid,
+			'timestamp' => $now,
+			'contents' => $contents
+			);
+		$result = $cmtable->insertRecord($data);
+		if ($result) {
+			return $result;
+		}
 		return false;
 	}
 	
 	public function printJoinLink($joinerid) {
 		ptag('a', 'Join ' . $this->getName(), array(
-			'href' => 'index.php?page=joinChat&charid=' . $joinerid . '&chat=' . $this->id
+			'href' => 'index.php?page=joinChat&charid=' . $joinerid . '&chat=' . $this->uid
 			));
 	}
 	
 	public function printLeaveLink($leaverid) {
 
 		ptag('a', 'Leave ' . $this->getName(), array(
-			'href' => 'index.php?page=leaveChat&charid=' . $leaverid . '&chat=' . $this->id
+			'href' => 'index.php?page=leaveChat&charid=' . $leaverid . '&chat=' . $this->uid
 			));
 	}
 }

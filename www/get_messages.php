@@ -16,7 +16,9 @@ else {
 	
 	if (isset($_SESSION['user_id'])) {
 		if (isset($_POST['charId'])) {
-			$curChar = new Character($mysqli, round($_POST['charId']));
+			$curChar = new Character($mysqli, 
+				array('uid' => round($_POST['charId']) )
+				);
 			if ($curChar->getOwner()!=$_SESSION['user_id']) {
 				echo "Unauthorized access<br />";
 			}
@@ -27,7 +29,9 @@ else {
 				}
 				else {
 					include_once(PRIV_PATH . 'classes/chat.php');
-					$curChat = new Chat($mysqli, $chatId);
+					$curChat = new Chat($mysqli, array(
+						'uid' => $chatId
+						));
 					
 					if (isset($_POST['msg'])) {
 						$curChar->say($curChat, $mysqli->real_escape_string($_POST['msg']));
@@ -36,7 +40,10 @@ else {
 					if (isset($_POST['lastseen'])) {
 						$lastseenID = round($_POST['lastseen']);
 					}
-					else $lastseenID = $curChar->getLastSeen($chatId);
+					else {
+						$info = $curChar->getLastSeen($chatId);
+						$lastseenID = $info['msg'];
+					}
 					
 					if (isset($_POST['justcount'])) {
 						echo $curChat->countUnseen($lastseenID);
@@ -45,7 +52,9 @@ else {
 						$msgs = $curChat->getMessages($lastseenID);
 						if ($msgs) {
 							foreach ($msgs as $m) {
-								$actor = new Character($mysqli, $m['actor']);
+								$actor = new Character($mysqli, array(
+									'uid' => $m['actor'])
+									);
 								starttag('p');
 								echo '[' . $m['timestamp'] . '] ';
 								echo $actor->getName();

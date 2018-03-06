@@ -3,7 +3,9 @@ include_once('classes/chat.php');
 
 if (isset($_GET['chat'])) {
 	$chatid = round($_GET['chat']);
-	$tryChat = new Chat($mysqli, $chatid);
+	$tryChat = new Chat($mysqli, array(
+			'uid' => $chatid
+		));
 	if (!$tryChat->getId()) {
 		include_once('header2.php');
 		errormsg("You are trying to leave a chat that doesn't exist.");
@@ -13,7 +15,9 @@ if (isset($_GET['chat'])) {
 		if ($curChar->getCurrentChat()!=$tryChat->getId()) {
 			include_once('header2.php');
 			infomsg("You are trying to leave a different chat than the one you're in. Try again with the proper link.");
-			$curChat = new Chat($mysqli, $curChatId);
+			$curChat = new Chat($mysqli, array(
+					'uid' => $curChatId
+				));
 			$curChat->printLeaveLink($curCharid);
 			backlink('Character page', 'index.php?page=cIndex&charid=' . $curCharid);
 		}

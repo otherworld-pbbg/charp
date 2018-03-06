@@ -11,6 +11,12 @@ class CustomError {
 		switch ($this->key) {
 		case "db_error":
 			return "A database error occurred.";
+		case "empty_data":
+			return "Empty data set.";
+		case "duplicate_id":
+			return "An entry already exists with this id.";
+		case "no_pkey":
+			return "Tried to update without referring to a particular row.";
 		case "in_use":
 			return "This username is already taken. Pick something else.";
 		case "in_pending":

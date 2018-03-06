@@ -7,18 +7,12 @@ class World {
 	}
 	
 	public function getLocsByType($type) {
-		$sql = "SELECT `uid`, `name`, `description`, `parent` FROM `locations` WHERE `type`=$type ORDER BY `uid`";
-		$res = $this->mysqli->query($sql);
-		if ($res->num_rows>0) {
+		$ltable = new LocationTable($this->mysqli);
+		$data = $ltable->getData("`type`=$type", NULL, '`uid` ASC');
+		if ($data) {
 			$retArr = array();
-			while ($arr = $res->fetch_assoc()) {
-				$temp = new Location(
-					$this->mysqli,
-					$arr["uid"],
-					$arr['name'],
-					$arr['parent'],
-					$type,
-					$arr['description']);
+			foreach ($data as $assoc) {
+				$temp = new Location($this->mysqli, $assoc);
 				$retArr[] = $temp;
 			}
 			return $retArr;
@@ -27,19 +21,12 @@ class World {
 	}
 	
 	public function getStartingLocations() {
-		$sql = "SELECT `uid`, `name`, `description`, `parent`, `type` FROM `locations` WHERE `spawning`=1 ORDER BY `uid`";
-		$res = $this->mysqli->query($sql);
-		if ($res->num_rows>0) {
+		$ltable = new LocationTable($this->mysqli);
+		$data = $ltable->getData("`spawning`=1", NULL, '`uid` ASC');
+		if ($data) {
 			$retArr = array();
-			while ($arr = $res->fetch_assoc()) {
-				$temp = new Location(
-					$this->mysqli,
-					$arr["uid"],
-					$arr['name'],
-					$arr['parent'],
-					$arr['type'],
-					$arr['description'],
-					1);//spawning
+			foreach ($data as $assoc) {
+				$temp = new Location($this->mysqli, $assoc);
 				$retArr[] = $temp;
 			}
 			return $retArr;
