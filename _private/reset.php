@@ -16,7 +16,7 @@ if (isset($_POST["username"])&&isset($_POST["email"]))
 			errormsg($info->getMsg());
 		}
 		else {
-			$check = generateActivationCode($mysqli, $uname, $email, "being changed", 3, $info->uid);
+			$check = generateActivationCode($mysqli, $uname, $email, "being changed", 3, $info['uid']);
 			if (is_a($check, 'CustomError')) {
 				include_once "header.php";
 				errormsg($check->getMsg());

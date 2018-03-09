@@ -73,6 +73,10 @@ class User {
 		return $this->email;
 	}
 	
+	public function getPasshash() {
+		return $this->passhash2;		
+	}
+	
 	function logLogin() {
 		$atable = new activityTable($this->mysqli);
 		$now = date('Y-m-d H:i:s');

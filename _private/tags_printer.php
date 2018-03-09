@@ -29,12 +29,6 @@ function errormsg($str) {
 	echo "</div>" . PHP_EOL;
 }
 
-function displayBodywarning() {
-	echo '<div class="alert alert-danger">' . PHP_EOL;
-	echo "This character doesn't have a body, so it cannot be played." . PHP_EOL;
-	echo "</div>" . PHP_EOL;
-}
-
 function ptag($tagname, $contents="", $attr=false)
 {
 	//prints html tag with opening and closing tags,

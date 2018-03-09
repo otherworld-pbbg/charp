@@ -142,9 +142,9 @@ class defaultTable {
 		$update = rtrim($update, ', ');
 		
 		$sql = "UPDATE $this->table_name SET $update WHERE $where";
-		$res = $this->mysqli->query($sql) or trigger_error('SQL', E_USER_ERROR);
+		$success = $this->mysqli->query($sql) or trigger_error('Update failed', E_USER_ERROR);
 		
-		return;
+		return $success;
 	}
 	
 	function deleteRecord($field_array) {
@@ -167,9 +167,9 @@ class defaultTable {
 		$where = rtrim($where, ' AND ');
 		
 		$sql = "DELETE FROM $this->table_name WHERE $where";
-		$res = $this->mysqli->query($sql) or trigger_error('SQL', E_USER_ERROR);
+		$success = $this->mysqli->query($sql) or trigger_error('Delete failed', E_USER_ERROR);
 		
-		return;
+		return $success;
 	}//deleteRecord
 	
 	function getErrors() {

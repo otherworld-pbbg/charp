@@ -4,9 +4,8 @@ if (isset($_POST["email"])&&isset($_POST["type"])) {
 	$email = $mysqli->real_escape_string($_POST["email"]);
 	$type = $_POST["type"];
 	
-	if ($type==1) $check = mailActivation($mysqli, $email);
-	if ($type==2) $check = mailEmailChange($mysqli, $email);
-	if ($type==3) $check = mailPasswordReset($mysqli, $email);
+	if ($type==1||$type==2||$type==3) $check = mailActivation($mysqli, $email, $type);
+	else $check = false;
 	
 	if ($check == 1) {
 		include_once('header.php');

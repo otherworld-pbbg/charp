@@ -3,6 +3,9 @@ require_once("tags_printer.php");//errormsg, infomsg function
 require_once("dictionary.php");
 require_once("classes/custom_error.php");
 require_once("classes/user.php");
+require_once("classes/user_table.php");
+require_once("classes/pending_users_table.php");
+require_once("classes/activity_table.php");
 
 function customRedirect($link, $pname) {
 	header('Location: ' . $link);
@@ -24,13 +27,6 @@ function setBint($val, $min, $max, $default) {
 	if ($val<$min) return $min;
 	if ($val>$max) return $max;
 	return round($val);
-}
-
-function queryDelete($mysqli, $table, $where, $order, $limit=0) {
-	if ($limit==0) $sql = "DELETE FROM `$table` WHERE $where ORDER BY $order";
-	else $sql = "DELETE FROM `$table` WHERE $where ORDER BY $order LIMIT $limit";
-	$mysqli->query($sql);
-	return $mysqli->affected_rows;
 }
 
 function interpretMsg($msg) {
@@ -103,16 +99,14 @@ function isUsername($element)
 }
 
 function checkFreeUsername($mysqli, $teststring) {
-	$sql = "SELECT `username` FROM `users` WHERE `username` LIKE '$teststring' LIMIT 1";
-	$res = $mysqli->query($sql);
-	if (mysqli_num_rows($res)) {
+	$utable = new userTable($mysqli);
+	$data = $utable->getData("`username` LIKE '$teststring'", 1, NULL, true);//count only
+	if ($data) {
 		$e = new CustomError("in_use");
 		return $e;
 	}
-	
-	$sql = "SELECT `username` FROM `pending_users` WHERE `username` LIKE '$teststring' LIMIT 1";
-	$res = $mysqli->query($sql);
-	if (mysqli_num_rows($res)) {
+	$check = checkPending($mysqli, $teststring);
+	if ($check) {
 		$e = new CustomError("in_pending");
 		return $e;
 	}
@@ -121,27 +115,20 @@ function checkFreeUsername($mysqli, $teststring) {
 }
 
 function checkPending($mysqli, $teststring) {
-	$sql = "SELECT `username` FROM `pending_users` WHERE `username` LIKE '$teststring' LIMIT 1";
-	$res = $mysqli->query($sql);
-	if (mysqli_num_rows($res)) {
+	$putable = new pendingUsersTable($mysqli);
+	$data = $putable->getData("`username` LIKE '$teststring'", 1, NULL, true);//count only
+	if ($data) {
 		return true;
 	}
 	return false;
 }
 
 function getExistingAccount($mysqli, $username) {
-	$res = $mysqli->query("SELECT `uid`, `passhash`, `passhash2`, `email`, `joined` FROM users WHERE `username` like '$username' LIMIT 1");
-	if (!$res) {
-		$e = new CustomError("db_error");
-		return $e;
-	}		
-	if ($res->num_rows == 0) {
-		$e = new CustomError("no_match_account");
-		return $e;
-	}
-	else {
-		return $res->fetch_object();
-	}
+	$utable = new userTable($mysqli);
+	$data = $utable->getData("`username` LIKE '$username'", 1);
+	if ($data) return $data[0];//type: assoc
+	$e = new CustomError("no_match_account");
+	return $e;
 }
 
 function generateActivationCode($mysqli, $username, $email, $passhash, $type=1, $userid='NULL') {
@@ -151,7 +138,7 @@ function generateActivationCode($mysqli, $username, $email, $passhash, $type=1, 
 	if ($type==3) {//password reset
 		$info = getExistingAccount($mysqli, $username);
 		if (is_a($info, "CustomError")) return $info;
-		if ($info->email!=$email) {
+		if ($info['email']!=$email) {
 			$e = new CustomError("wrong_email");
 			return $e;
 		}	
@@ -159,20 +146,31 @@ function generateActivationCode($mysqli, $username, $email, $passhash, $type=1, 
 	if ($type==2) {//email change
 		$info = getExistingAccount($mysqli, $username);
 		if (is_a($info, "CustomError")) return $info;
-		if ($info->passhash2!=$passhash) {
+		if ($info['passhash2']!=$passhash) {
 			$e = new CustomError("wrong_password");
 			return $e;
 		}	
 	}
 	
-	$sql = "INSERT INTO `pending_users` (`username`, `passhash`, `email`, `joined`, `activation`, `type`, `userid`) VALUES ('$username', '$passhash', '$email', CURRENT_TIMESTAMP(), '$activation', '$type', $userid)";
-	$mysqli->query($sql);
-	$result = $mysqli->insert_id;
-	if (!$result) return 0;
+	$putable = new pendingUsersTable($mysqli);
+	$now = date('Y-m-d H:i:s');
+	$data = array(
+		'username' => $username,
+		'passhash' => $passhash,
+		'email' => $email,
+		'joined' => $now,
+		'activation' => $activation,
+		'type' => $type,
+		'userid' => $userid
+		);
+	$result = $putable->insertRecord($data);
 	
-	if ($type==1) $mailcheck = mailActivation($mysqli, $email);
-	if ($type==2) $mailcheck = mailEmailChange($mysqli, $email);
-	if ($type==3) $mailcheck = mailPasswordReset($mysqli, $email);
+	if (!$result) {
+		$e = new CustomError("db_error");//Technically this should never be triggered because this is only triggered on duplicate id and the column is auto-increment, so only if it runs out of numbers then it might theoretically trigger this
+		return $e;
+	}
+	
+	$mailcheck = mailActivation($mysqli, $email, $type);
 	if (!$mailcheck) {
 		$e = new CustomError("mail_fail");
 		return $e;
@@ -180,93 +178,66 @@ function generateActivationCode($mysqli, $username, $email, $passhash, $type=1, 
 	return 1;
 }
 
-function mailActivation($mysqli, $email) {
-	$sql = "SELECT `username`, `activation`, `joined` FROM `pending_users` WHERE `email` LIKE '$email' AND `type`=1 LIMIT 1";
-	$res = $mysqli->query($sql);
-	if ($res->num_rows) {
-		$row = mysqli_fetch_object($res);
+function mailActivation($mysqli, $email, $type) {
+	if ($type>3||$type<1) return false;//just a precaution
+	//March 9, 2018: Combined all 3 types of activation to use the same mailer function
+	$info = array();
+	$info[] = array(
+		'title' => "Welcome to Otherworld!",
+		'explanation' => "Your email address was used to request an account from Otherworld-PBBG.com. Below are your activation details.\n\n",
+		'instructions' => "Go to http://www.otherworld-pbbg.com/activate.php and paste your activation code in the box.\n\n",
+		'disclaimer' => "Forgotten passwords cannot be recovered, but you can reguest for a password reset if you forget your password. Password reset requires access to this email address you registered with. Keep your email address up to date because if you forget your password and don't have a valid email address, you lose access to your account permanently.\n",
+	);
+	$info[] = array(
+		'title' => "Otherworld email change request",
+		'explanation' => "An account in Otherworld-PBBG.com set this as their new email address. Details are below.\n\n",
+		'instructions' => "Go to http://www.otherworld-pbbg.com/activate.php and paste your activation code in the box.\n\n",
+		'disclaimer' => "If you request for a password reset before confirming your email change, the activation code will go in the old email address, so if you no longer have access to that or it's blank, make sure to use this activation code first before reseting your password.\n\n",
+	);
+	$info[] = array(
+		'title' => "Otherworld password reset request",
+		'explanation' => "An account in Otherworld-PBBG.com linked to this email address requested for a password reset. Details are below.\n\n",
+		'instructions' => "Go to http://www.otherworld-pbbg.com/activate.php , paste your activation code in the box and provide a new password.\n\n",
+		'disclaimer' => "Until you enter the correct code, the account will continue being accessible with the old password.\n\n"
+	);
+	$putable = new pendingUsersTable($mysqli);
+	$data = $putable->getData("`email` LIKE '$email' AND `type`=$type", 1, '`uid` DESC');
+	if ($data) {
+		$assoc = $data[0];
 		
-		$msg = "Your email address was used to request an account from Otherworld-PBBG.com. Below are your activation details.\n\n";
-		$msg .= "Username: " . $row->username . "\n";
-		$msg .= "Password: (what ever you registered with, withheld for security purposes)\n";
-		$msg .= "Activation code: " . $row->activation . "\n\n";
-		$msg .= "Go to http://www.otherworld-pbbg.com/activate.php and paste your activation code in the box.\n\n";
-		$msg .= "Disclaimer: Forgotten passwords cannot be recovered, but you can reguest for a password reset if you forget your password. Password reset requires access to this email address you registered with. Keep your email address up to date because if you forget your password and don't have a valid email address, you lose access to your account permanently.\n";
-		$msg .= "The request was made on $row->joined server time. If you did not request this message, you can just ignore it and the pending account will be purged in 24 hours.\n\n";
+		$msg = $info[$type-1]['explanation'];
+		$msg .= "Username: " . $assoc['username'] . "\n";
+		$msg .= "Activation code: " . $assoc['activation'] . "\n\n";
+		$msg .= $info[$type-1]['instructions'];
+		$msg .= $info[$type-1]['disclaimer'];
+		$msg .= "The request was made on " .  $assoc['joined'] . " server time. If you did not request this message, you can just ignore it.\n\n";
 		$msg .= "(This is an automatically sent message. Don't reply to it because the reply address doesn't actually exist.)";
 		
 		$msg = wordwrap($msg,70);
 		$headers = "From: noreply@otherworld-pbbg.com";
 		
-		$result = mail($email, "Welcome to Otherworld!", $msg, $headers);
+		$result = mail($email, $info[$type-1]['title'], $msg, $headers);
 		
-		if ($result) return true;
-	}
-	return false;
-}
-
-function mailEmailChange($mysqli, $email) {
-	$sql = "SELECT `username`, `activation`, `joined` FROM `pending_users` WHERE `email` LIKE '$email' AND `type`=2 LIMIT 1";
-	$res = $mysqli->query($sql);
-	if ($res->num_rows) {
-		$row = mysqli_fetch_object($res);
-		
-		$msg = "An account in Otherworld-PBBG.com set this as their new email address. Details are below.\n\n";
-		$msg .= "Username: " . $row->username . "\n";
-		$msg .= "Activation code: " . $row->activation . "\n\n";
-		$msg .= "Go to http://www.otherworld-pbbg.com/activate.php and paste your activation code in the box.\n\n";
-		$msg .= "If you request for a password reset before confirming your email change, the activation code will go in the old email address, so if you no longer have access to that or it's blank, make sure to use this activation code first before reseting your password.\n\n";
-		$msg .= "The request was made on $row->joined server time. If you did not request this message, you can just ignore it and the email change request will be purged in 24 hours.\n\n";
-		$msg .= "(This is an automatically sent message. Don't reply to it because the reply address doesn't actually exist.)";
-		
-		$msg = wordwrap($msg,70);
-		$headers = "From: noreply@otherworld-pbbg.com";
-		
-		$result = mail($email, "Otherworld email change request", $msg, $headers);
-		
-		if ($result) return true;
-	}
-	return false;
-}
-
-function mailPasswordReset($mysqli, $email) {
-	$sql = "SELECT `email`, `username`, `activation`, `joined` FROM `pending_users` WHERE `email` LIKE '$email' AND `type`=3 LIMIT 1";
-	$res = $mysqli->query($sql);
-	if ($res->num_rows) {
-		$row = mysqli_fetch_object($res);
-		
-		$msg = "An account in Otherworld-PBBG.com linked to this email address requested for a password reset. Details are below.\n\n";
-		$msg .= "Username: " . $row->username . "\n";
-		$msg .= "Activation code: " . $row->activation . "\n\n";
-		$msg .= "Go to http://www.otherworld-pbbg.com/activate.php , paste your activation code in the box and provide a new password.\n\n";
-		$msg .= "Until you enter the correct code, the account will continue being accessible with the old password.\n\n";
-		$msg .= "The request was made on $row->joined server time. If you did not request this message, or requested it accidentally, you can just ignore it and the password reset request will be purged in 24 hours.\n\n";
-		$msg .= "(This is an automatically sent message. Don't reply to it because the reply address doesn't actually exist.)";
-		
-		$msg = wordwrap($msg,70);
-		$headers = "From: noreply@otherworld-pbbg.com";
-		
-		$result = mail($row->email, "Otherworld password reset request", $msg, $headers);
-		
-		if ($result) return true;
+		if ($result) return 1;
 	}
 	return false;
 }
 
 function activateAccount($mysqli, $username, $activation) {
-	$sql = "SELECT `uid`, `username`, `passhash`, `email` FROM `pending_users` WHERE `username` LIKE '$username' AND `activation` LIKE '$activation' AND `type`=1 LIMIT 1";
-	$res = $mysqli->query($sql);
-	if ($res->num_rows) {
-		$row = mysqli_fetch_object($res);
+	$putable = new pendingUsersTable($mysqli);
+	$data = $putable->getData("`username` LIKE '$username' AND `activation` LIKE '$activation' AND `type`=1", 1, '`uid` DESC');
+	if ($data) {
+		$assoc = $data[0];
 		$newUser = new User($mysqli, array(
-				'username' => $row->username,
-				'passhash2' => $row->passhash,
-				'email' => $row->email
-			));//now this can call user creation from the constructor
-		$result = $newUser->getId();
+				'username' => $assoc['username'],
+				'passhash2' => $assoc['passhash'],
+				'email' => $assoc['email']
+			));
+		$result = $newUser->getId();//returns 0 if user creation failed
 		if ($result) {
-			$r=queryDelete($mysqli, "pending_users", "`uid`=$row->uid", "`uid`", 1);
-			if ($r==0) {
+			$info = array('uid' => $assoc['uid']);
+			$r = $putable->deleteRecord($info);
+			if (!$r) {
 				$e = new CustomError("left_pending_a");
 				return $e;
 			}//user account was generated successfully but pending account was left hanging
@@ -281,15 +252,22 @@ function activateAccount($mysqli, $username, $activation) {
 }
 
 function activateEmail($mysqli, $username, $activation) {
-	$sql = "SELECT `uid`, `email`, `userid` FROM `pending_users` WHERE `username` LIKE '$username' AND `activation` LIKE '$activation' AND `type`=2 LIMIT 1";
-	$res = $mysqli->query($sql);
-	if ($res->num_rows) {
-		$row = mysqli_fetch_object($res);
-		$sql2 = "UPDATE `users` SET `email`='$row->email' WHERE `uid`=$row->userid LIMIT 1";
-		$mysqli->query($sql2);
-		if ($mysqli->affected_rows==1) {
-			$r=queryDelete($mysqli, "pending_users", "`uid`=$row->uid", "`uid`", 1);
-			if ($r==0) {
+	$putable = new pendingUsersTable($mysqli);
+	$data = $putable->getData("`username` LIKE '$username' AND `activation` LIKE '$activation' AND `type`=2", 1, '`uid` DESC');
+	if ($data) {
+		$pu_entry = $data[0];
+		$utable = new userTable($mysqli);
+		$data2 = $utable->getData("`uid`=" . $pu_entry['userid'], 1);
+		$user_entry = $data2[0];
+		$info = array(
+			'uid' => $user_entry['uid'],
+			'email' => $pu_entry['email']
+		);
+		$success = $utable->updateRecord($info);
+		if ($success) {
+			$info = array('uid' => $pu_entry['uid']);
+			$r = $putable->deleteRecord($info);
+			if (!$r) {
 				$e = new CustomError("left_pending_a");
 				return $e;
 			}//email was changed successfully but pending account was left hanging
@@ -303,15 +281,22 @@ function activateEmail($mysqli, $username, $activation) {
 }
 
 function resetPassword($mysqli, $username, $activation, $passhash) {
-	$sql = "SELECT `uid`, `userid` FROM `pending_users` WHERE `username` LIKE '$username' AND `activation` LIKE '$activation' AND `type`=3 LIMIT 1";
-	$res = $mysqli->query($sql);
-	if ($res->num_rows) {
-		$row = mysqli_fetch_object($res);
-		$sql2 = "UPDATE `users` SET `passhash2`='$passhash' WHERE `uid`=$row->userid LIMIT 1";
-		$mysqli->query($sql2);
-		if ($mysqli->affected_rows==1) {
-			$r=queryDelete($mysqli, "pending_users", "`uid`=$row->uid", "`uid`", 1);
-			if ($r==0) {
+	$putable = new pendingUsersTable($mysqli);
+	$data = $putable->getData("`username` LIKE '$username' AND `activation` LIKE '$activation' AND `type`=3", 1, '`uid` DESC');
+	if ($data) {
+		$pu_entry = $data[0];
+		$utable = new userTable($mysqli);
+		$data2 = $utable->getData("`uid`=" . $pu_entry['userid'], 1);
+		$user_entry = $data2[0];
+		$info = array(
+			'uid' => $user_entry['uid'],
+			'passhash2' => $passhash
+		);
+		$success = $utable->updateRecord($info);
+		if ($success) {
+			$info = array('uid' => $pu_entry['uid']);
+			$r = $putable->deleteRecord($info);
+			if (!$r) {
 				$e = new CustomError("left_pending_p");
 				return $e;
 			}//password was changed successfully but pending account was left hanging
@@ -331,15 +316,9 @@ function backlink($pname, $url) {
 }
 
 function getActivityLog($mysqli, $limit=100) {
-	$retArr = array();
-	$sql = "SELECT `userFK` as `user`, `timestamp` as `time` FROM `activity_log` ORDER BY `uid` DESC LIMIT $limit";
-	$res = $mysqli->query($sql);
-	if ($res->num_rows) {
-		while ($row = mysqli_fetch_assoc($res)) {
-			$retArr[] = $row;
-		}
-		return $retArr;
-	}
-	else return false;
+	$atable = new activityTable($this->mysqli);
+	$data = $atable->getData("`userFK`=$this->uid", $limit, '`uid` DESC');
+	if ($data) return $data;
+	return false;
 }
 ?>

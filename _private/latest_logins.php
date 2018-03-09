@@ -42,10 +42,10 @@ if ($player->checkRight(R_VIEWLOG, YES)) {
 	if (is_array($log)) {
 		starttag('ul');
 		foreach ($log as $entry) {
-			$p = new User($mysqli, array('uid' => $entry['user']));
+			$p = new User($mysqli, array('uid' => $entry['userFK']));
 			starttag('li');
-			ptag('a', $p->getUsername(), array('href' => 'index.php?page=viewPlayer&ouser=' . $entry['user']));
-			echo ' (id ' . $entry['user'] . ') logged in at ' . $entry['time'];
+			ptag('a', $p->getUsername(), array('href' => 'index.php?page=viewPlayer&ouser=' . $entry['userFK']));
+			echo ' (id ' . $entry['userFK'] . ') logged in at ' . $entry['timestamp'];
 			closetag('li');
 		}
 		closetag('ul');

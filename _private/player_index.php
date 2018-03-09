@@ -105,6 +105,9 @@ starttag('div', '', array('class' => 'row'));
 				ptag('a', 'Create new character', array('href' => 'index.php?page=newChar'));
 			closetag('div');//end panel body
 			starttag('div', '', array('class' => 'panel-body'));
+				ptag('a', 'Settings (change email address)', array('href' => 'index.php?page=pSettings'));
+			closetag('div');//end panel body
+			starttag('div', '', array('class' => 'panel-body'));
 				ptag('a', 'Familiarize yourself with the world', array('href' => 'index.php?page=worldInfo'));
 			closetag('div');//end panel body
 
