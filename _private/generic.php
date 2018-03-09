@@ -316,8 +316,8 @@ function backlink($pname, $url) {
 }
 
 function getActivityLog($mysqli, $limit=100) {
-	$atable = new activityTable($this->mysqli);
-	$data = $atable->getData("`userFK`=$this->uid", $limit, '`uid` DESC');
+	$atable = new activityTable($mysqli);
+	$data = $atable->getData("1", $limit, '`uid` DESC');
 	if ($data) return $data;
 	return false;
 }
